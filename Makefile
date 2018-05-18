@@ -5,3 +5,6 @@ build:
 
 run:
 	go run $(SRC)
+
+clean:
+	rm -f fortune

@@ -2,72 +2,82 @@ package main
 
 import (
 	"math/rand"
-	"math"
-	// "fmt"
+	// "math"
+	"fmt"
 )
 
 const (
 	PlotSea float32 = 0
 	PlotBeach       = 0.125
-	PlotForest      = 0.5
-	PlotMountain    = 1.0
+	PlotPlains      = 0.5
+	PlotForest      = 0.8
+	PlotMountain    = 4.0
+)
+
+const (
+	WorldWidth = 200
+	WorldHeight = 200
+	ViewWidth = 80
+	ViewHeight = 32
 )
 
 type Plot struct {
+	X, Y int
 	Explored int64
 	Elevation float32
 	Unit PlotUnit
 	Tile PlotTile
 }
 
-type Box struct {
-	X, Y int
-	View struct {
-		Width, Height int
-	}
-}
-
-type Camera struct {
-	Box
-}
-
 type World struct {
-	Plots [200][200]Plot
+	Plots [WorldWidth][WorldHeight]Plot
 	Smoothness int
 
-	Cursor Box
-	Cam Camera
+	R *rand.Rand
 }
 
 
-func (c *Box) Move(dx, dy int) {
-	nx, ny := c.X + dx, c.Y + dy
-
-	if nx >= 0 && nx < 200 {
-		c.X = nx
+func (p *Plot) TerrainName() string {
+	switch {
+	case p.Elevation < PlotSea:
+		return "sea"
+	case  p.Elevation < PlotBeach:
+		return "beach"
+	case p.Elevation < PlotPlains:
+		return "plains"
+	case  p.Elevation < PlotForest:
+		return "forest"
+	case p.Elevation < PlotMountain:
+		return "mountains"
 	}
 
-	if ny >= 0 && ny < 200 {
-		c.Y = ny
-	}
+	return ""
 }
 
 
-func (c *Camera) Move(dx, dy int) {
-	hw, hh := c.View.Width >> 1, c.View.Height >> 1
-	nx, ny := c.X + dx, c.Y + dy
+func (p *Plot) Description(descType int) string {
+	desc := fmt.Sprintf("%v (%d,%d)", p.TerrainName(), p.X, p.Y)
 
-	if nx - hw >= 0 && nx + hw < 200 {
-		c.X = nx
+	if p.Unit.Type != UnitNone {
+		return p.Unit.Description(descType) + " in the " + desc
 	}
 
-	if ny - hh >= 0 && ny + hh < 200 {
-		c.Y = ny
-	}
+	return desc
 }
 
 
-func (p *Plot) productionRate() float32 {
+func (p *Plot) SpawnUnit(unitType int, owner *Player) (*PlotUnit, string) {
+	if p.Unit.Type != UnitNone {
+		return nil, "Couldn't spawn " + Units[unitType].Name + " in occupied plot!"
+	}
+	p.Unit = Units[unitType]
+	p.Unit.Owner = owner
+
+	return &p.Unit, fmt.Sprintf("%v spawned!", Units[unitType].Name)
+}
+
+
+func (p *Plot) ProductionRate() float32 {
 	switch {
 	case p.Elevation <= PlotSea:
 		return 1
@@ -81,7 +91,22 @@ func (p *Plot) productionRate() float32 {
 }
 
 
-func (w *World) avgPatch(cx, cy int) float32 {
+func (p *Plot) IsLivable() bool {
+	return p.Elevation > PlotSea && p.Elevation < PlotForest
+}
+
+
+func (w *World) FindLivablePlot() *Plot {
+	for {
+		x, y := w.R.Intn(WorldWidth), w.R.Intn(WorldHeight)
+		plot := &w.Plots[x][y]
+		if plot.IsLivable() {
+			return plot
+		}
+	}
+}
+
+func (w *World) avgPatchElevation(cx, cy int) float32 {
 	avg := float32(0.0)
 	n := 0
 	for x := cx - 1; x <= cx + 1; x += 1 {
@@ -95,35 +120,34 @@ func (w *World) avgPatch(cx, cy int) float32 {
 }
 
 func (w *World) Init(seed int64) {
-	r := rand.New(rand.NewSource(seed))
+	if w.R == nil {
+		w.R = rand.New(rand.NewSource(seed))
+	}
 
-	w.Cursor.X = 100
-	w.Cursor.Y = 100
-	w.Cam.X = 100
-	w.Cam.Y = 100
-	w.Cam.View.Width, w.Cam.View.Height = 80, 32
-
-	// populate with initial noize
+	// populate with initial noise
 	width, height := len(w.Plots), len(w.Plots[0])
 	for x := 0; x < width; x += 1 {
 		for y := 0; y < height; y += 1 {
 			plot := &w.Plots[x][y]
 
-			dist := math.Sqrt(math.Pow(float64(x-w.Cam.X) / 2, 2) + math.Pow(float64(y-w.Cam.Y), 2))
-			if dist <= 5 {
-				plot.Explored = 1
-			}
+			plot.X, plot.Y = x, y
+
+			// dist := math.Sqrt(math.Pow(float64(x-w.Cam.X) / 2, 2) + math.Pow(float64(y-w.Cam.Y), 2))
+			// if dist <= 5 {
+			// 	plot.Explored = 1
+			// }
+			plot.Explored = 1
 
 			if x == 0 || x == width - 1 || y == 0 || y == height - 1 {
 				plot.Elevation = -1;
 				continue
 			}
 
-			w := Gauss2D(float32(x) / float32(width),
-			            float32(y) / float32(height),
-						r.Float32(),
-						r.Float32(), 0.5, 0.4) - 0.25
-			plot.Elevation += float32(r.NormFloat64()) + w
+			off := Gauss2D(float32(x) / float32(width),
+			               float32(y) / float32(height),
+			               w.R.Float32(),
+			               w.R.Float32(), 0.5, 0.4) - 0.25
+			plot.Elevation += float32(w.R.NormFloat64()) + off
 		}
 	}
 
@@ -131,7 +155,7 @@ func (w *World) Init(seed int64) {
 		for x := 1; x < len(w.Plots) - 1; x += 1 {
 			for y := 1; y < len(w.Plots[x]) - 1; y += 1 {
 				plot := &w.Plots[x][y]
-				plot.Elevation = w.avgPatch(x, y)
+				plot.Elevation = w.avgPatchElevation(x, y)
 				// fmt.Println(patch)
 			}
 		}

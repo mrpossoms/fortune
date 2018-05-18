@@ -22,3 +22,9 @@ func Gauss2D(x, y, muX, muY, sigX, sigY float32) float32 {
 
 	return float32(math.Pow(math.E, exp) / deno)
 }
+
+
+func abs(i int) int {
+	if i < 0 { return -i }
+	return i
+}
