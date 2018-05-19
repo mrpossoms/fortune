@@ -12,9 +12,9 @@ var GameWorld World
 func main() {
 	ln, err := net.Listen("tcp", ":31337")
 
-	if true || err != nil {
+	if err != nil {
 		Intro()
-		
+
 		GameWorld = World {
 			Smoothness: 2,
 		}

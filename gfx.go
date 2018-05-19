@@ -58,6 +58,43 @@ func gfxShowMsgs() {
 	MsgQueue = MsgQueue[1:len(MsgQueue)]
 }
 
+
+func GfxPrompt(prompt string) string {
+	input := ""
+	_, h := termbox.Size()
+	h /= 2
+
+	gfxStringCenteredAt(h - 1, prompt + ", then press ENTER")
+	for {
+		termbox.Flush()
+		evt := termbox.PollEvent()
+
+		switch {
+		case evt.Key == termbox.KeyBackspace:
+		case evt.Key == termbox.KeyBackspace2:
+			if len(input) > 0 {
+				input = input[:len(input) - 1]
+			}
+			break
+		case evt.Key == termbox.KeySpace:
+			input += " "
+			break
+		case evt.Key == termbox.KeyEnter:
+			return input
+		case evt.Ch != 0:
+			input += string(evt.Ch)
+		}
+
+		gfxStringCenteredAt(h, input)
+	}
+
+	gfxStringCenteredAt(h, input)
+	termbox.Flush()
+
+	return input
+}
+
+
 func (w *World) GfxDraw(player *Player) {
 	tw, _ := termbox.Size()
 	thw := tw >> 1
@@ -88,12 +125,12 @@ func (w *World) GfxDraw(player *Player) {
 						break
 					case plot.Elevation < PlotBeach:
 						bg = termbox.ColorYellow
-						symbol = rune(' ')
+						symbol = rune('¨')
 						break
 					case plot.Elevation < PlotPlains:
 						fg = termbox.ColorBlack
 						bg = termbox.ColorGreen
-						symbol = rune(' ')
+						symbol = rune('¸')
 						break
 					case plot.Elevation < PlotForest:
 						fg = termbox.ColorBlack | termbox.AttrUnderline

@@ -37,16 +37,22 @@ func (p *Player) MoveCursor(dx, dy int) {
 	last_dist_x := abs(p.Cursor.X - p.Cam.X)
 	last_dist_y := abs(p.Cursor.Y - p.Cam.Y)
 
-	p.Cursor.Move(0, dy)
-	new_dist := abs(p.Cursor.Y - p.Cam.Y)
-	if new_dist > 10 && new_dist > last_dist_y {
-		p.Cam.Move(0, dy)
+	for i := abs(dy); i > 0; i -= 1 {
+		_dy := dy / abs(dy)
+		p.Cursor.Move(0, _dy)
+		new_dist := abs(p.Cursor.Y - p.Cam.Y)
+		if new_dist > 10 && new_dist > last_dist_y {
+			p.Cam.Move(0, _dy)
+		}
 	}
 
-	p.Cursor.Move(dx, 0)
-	new_dist = abs(p.Cursor.X - p.Cam.X)
-	if new_dist > 10 && new_dist > last_dist_x {
-		p.Cam.Move(dx, 0)
+	for i := abs(dx); i > 0; i -= 1 {
+		_dx := dx / abs(dx)
+		p.Cursor.Move(_dx, 0)
+		new_dist := abs(p.Cursor.X - p.Cam.X)
+		if new_dist > 10 && new_dist > last_dist_x {
+			p.Cam.Move(_dx, 0)
+		}
 	}
 }
 

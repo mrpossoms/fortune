@@ -4,6 +4,7 @@ import (
 	"math/rand"
 	// "math"
 	"fmt"
+	// "net"
 )
 
 const (
@@ -15,8 +16,8 @@ const (
 )
 
 const (
-	WorldWidth = 200
-	WorldHeight = 200
+	WorldWidth = 80
+	WorldHeight = 32
 	ViewWidth = 80
 	ViewHeight = 32
 )
@@ -105,6 +106,7 @@ func (w *World) FindLivablePlot() *Plot {
 		}
 	}
 }
+
 
 func (w *World) avgPatchElevation(cx, cy int) float32 {
 	avg := float32(0.0)

@@ -1,7 +1,7 @@
 SRC=$(wildcard *.go)
 
-build:
-	go build $(SRC):
+all:
+	go build
 
 run:
 	go run $(SRC)

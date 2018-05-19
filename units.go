@@ -42,7 +42,7 @@ var Units = []PlotUnit{
 	PlotUnit{Icon{rune(' '), 0}, UnitNone, ResourcesProps{Current:0, Rate:0}, nil, "vacant"},
 	PlotUnit{Icon{rune('^'), termbox.AttrUnderline}, UnitForest, ResourcesProps{Current:0, Rate:1}, nil, "forest"},
 	PlotUnit{Icon{rune('∆'), termbox.AttrUnderline}, UnitVillage, ResourcesProps{Current:0, Rate:3}, nil, "village"},
-	PlotUnit{Icon{rune('U'), 0}, UnitCity, ResourcesProps{Current:0, Rate:10}, nil, "city"},
+	PlotUnit{Icon{rune('Ü'), 0}, UnitCity, ResourcesProps{Current:0, Rate:10}, nil, "city"},
 	PlotUnit{Icon{rune('≈'), 0}, UnitFarm, ResourcesProps{Current:0, Rate:2}, nil, "farm"},
 	PlotUnit{Icon{rune('M'), 0}, UnitMine, ResourcesProps{Current:0, Rate:3}, nil, "mine"},
 	PlotUnit{Icon{rune('*'), 0}, UnitExplorers, ResourcesProps{Current:0, Rate:-1}, nil, "explorers"},
