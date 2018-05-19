@@ -5,44 +5,69 @@ import (
 	"github.com/nsf/termbox-go"
 	"net"
 	"os"
-	"sync"
-	// "fmt"
+	"golang.org/x/sync/semaphore"
+	"context"
+	"fmt"
+	"encoding/gob"
 )
 
 
 func GameClient() {
-	var joinLock = &sync.Mutex{}
+
+	if len(os.Args) < 2 {
+		panic("Please provide an address or domain to connect to")
+	}
+
+	ctx := context.TODO()
+	joinSem := semaphore.NewWeighted(2)
 	var player Player;
-	conn, err := net.Dial("tcp", os.Args[1])
+	gotMap := false
+	conn, err := net.Dial("tcp", os.Args[1] + ":31337")
 	if err != nil {
 		// handle error
 		panic(err)
 	}
 
-	joinLock.Lock()
+	enc := gob.NewEncoder(conn)
+	dec := gob.NewDecoder(conn)
+
+	joinSem.Acquire(ctx, 2)
 
 	go func(){
 		for {
 			hdr := Msg{}
-			hdr.Read(conn)
+			if err:= hdr.Read(dec); err != nil {
+				panic(err)
+			}
+
+			fmt.Printf("[HDR %d %d] %d\n", hdr.Version, hdr.Type, hdr.Count)
 
 			switch (hdr.Type) {
 			case PayTypJoin:
-				player.Read(conn)
+				player.Read(dec)
+				fmt.Println("Got Player object")
 
-				GfxDrawBegin()
-				player.Name = GfxPrompt("Type your name")
+				//GfxDrawBegin()
+				player.Name = "mrpossoms"//GfxPrompt("Type your name")
 
-				hdr.Write(conn)
-				player.Write(conn)
-				joinLock.Unlock()
+				hdr.Write(enc)
+				player.Write(enc)
+				joinSem.Release(1)
 				break
 			case PayTypPlot:
 				var plot Plot
 				for i := 0; i < int(hdr.Count); i += 1 {
-					plot.Read(conn)
+					plot.Read(dec)
 					GameWorld.Plots[plot.X][plot.Y] = plot
 				}
+
+				if !gotMap {
+					gotMap = true
+					joinSem.Release(1)
+				} else {
+					termbox.Interrupt()
+				}
+
 				break
 			}
 		}
@@ -50,7 +75,7 @@ func GameClient() {
 		conn.Close()
 	}()
 
-	joinLock.Lock()
+	joinSem.Acquire(ctx, 1)
 	running := true
 
 	GfxInit()
@@ -83,8 +108,8 @@ func GameClient() {
 		}
 
 		{
-			x, y := player.Cursor.X, player.Cursor.Y
-			GameWorld.Plots[x][y].Explored = 1
+			// x, y := player.Cursor.X, player.Cursor.Y
+			// GameWorld.Plots[x][y].Explored = 1
 		}
 	}
 /*

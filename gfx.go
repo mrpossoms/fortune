@@ -109,11 +109,11 @@ func (w *World) GfxDraw(player *Player) {
 			fg, bg := termbox.ColorWhite, termbox.ColorBlack
 			symbol := rune('?')
 
-			if plot.Explored > 0 {
+			if plot.Explored & player.ID > 0 {
 				if plot.Unit.Type != UnitNone {
 					// Man made
-					bg = plot.Unit.Owner.Colors.Bg
-					fg = plot.Unit.Owner.Colors.Fg | plot.Unit.Attr
+					bg = termbox.ColorRed //plot.Unit.Owner.Colors.Bg
+					fg = termbox.ColorWhite //plot.Unit.Owner.Colors.Fg | plot.Unit.Attr
 					symbol = plot.Unit.Symbol
 				} else {
 					// Natural, unoccupied plot
@@ -159,7 +159,7 @@ func (w *World) GfxDraw(player *Player) {
 		}
 	}
 
-	if player.SelectedPlot(w).Explored > 0 {
+	if player.SelectedPlot(w).Explored & player.ID > 0 {
 		gfxStringCenteredAt(1, player.SelectedPlot(w).Description(UnitDescriptionShort))
 	}
 }

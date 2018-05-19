@@ -20,7 +20,7 @@ type PlotUnit struct {
 	Icon
 	Type int
 	Resources ResourcesProps
-	Owner *Player
+	OwnerID int64
 	Name string
 }
 type PlotTile struct { Icon }
@@ -39,16 +39,16 @@ const (
 )
 
 var Units = []PlotUnit{
-	PlotUnit{Icon{rune(' '), 0}, UnitNone, ResourcesProps{Current:0, Rate:0}, nil, "vacant"},
-	PlotUnit{Icon{rune('^'), termbox.AttrUnderline}, UnitForest, ResourcesProps{Current:0, Rate:1}, nil, "forest"},
-	PlotUnit{Icon{rune('∆'), termbox.AttrUnderline}, UnitVillage, ResourcesProps{Current:0, Rate:3}, nil, "village"},
-	PlotUnit{Icon{rune('Ü'), 0}, UnitCity, ResourcesProps{Current:0, Rate:10}, nil, "city"},
-	PlotUnit{Icon{rune('≈'), 0}, UnitFarm, ResourcesProps{Current:0, Rate:2}, nil, "farm"},
-	PlotUnit{Icon{rune('M'), 0}, UnitMine, ResourcesProps{Current:0, Rate:3}, nil, "mine"},
-	PlotUnit{Icon{rune('*'), 0}, UnitExplorers, ResourcesProps{Current:0, Rate:-1}, nil, "explorers"},
-	PlotUnit{Icon{rune('*'), 0}, UnitTravelers, ResourcesProps{Current:0, Rate:0}, nil, "travelers"},
-	PlotUnit{Icon{rune('*'), termbox.AttrBold}, UnitMerchants, ResourcesProps{Current:0, Rate:5}, nil, "merchants"},
-	PlotUnit{Icon{rune('*'), termbox.AttrBold}, UnitArmy, ResourcesProps{Current:0, Rate:-5}, nil, "army"},
+	PlotUnit{Icon{rune(' '), 0}, UnitNone, ResourcesProps{Current:0, Rate:0}, 0, "vacant"},
+	PlotUnit{Icon{rune('^'), termbox.AttrUnderline}, UnitForest, ResourcesProps{Current:0, Rate:1}, 0, "forest"},
+	PlotUnit{Icon{rune('∆'), termbox.AttrUnderline}, UnitVillage, ResourcesProps{Current:0, Rate:3}, 0, "village"},
+	PlotUnit{Icon{rune('Ü'), 0}, UnitCity, ResourcesProps{Current:0, Rate:10}, 0, "city"},
+	PlotUnit{Icon{rune('≈'), 0}, UnitFarm, ResourcesProps{Current:0, Rate:2}, 0, "farm"},
+	PlotUnit{Icon{rune('M'), 0}, UnitMine, ResourcesProps{Current:0, Rate:3}, 0, "mine"},
+	PlotUnit{Icon{rune('*'), 0}, UnitExplorers, ResourcesProps{Current:0, Rate:-1}, 0, "explorers"},
+	PlotUnit{Icon{rune('*'), 0}, UnitTravelers, ResourcesProps{Current:0, Rate:0}, 0, "travelers"},
+	PlotUnit{Icon{rune('*'), termbox.AttrBold}, UnitMerchants, ResourcesProps{Current:0, Rate:5}, 0, "merchants"},
+	PlotUnit{Icon{rune('*'), termbox.AttrBold}, UnitArmy, ResourcesProps{Current:0, Rate:-5}, 0, "army"},
 }
 
 
@@ -70,9 +70,10 @@ const (
 func (u *PlotUnit) Description(descType int) string {
 	desc := u.Name
 
-	if u.Owner != nil {
-		desc = u.Owner.Name + " " + desc
-	}
+	// TODO
+	// if u.Owner != nil {
+	// 	desc = u.Owner.Name + " " + desc
+	// }
 
 	return desc
 }

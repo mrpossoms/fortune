@@ -25,7 +25,7 @@ type PlayerColors struct {
 
 type Player struct {
 	Score int32
-	ID int32
+	ID int64
 	Colors PlayerColors
 	Cursor Box
 	Cam Camera

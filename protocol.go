@@ -2,15 +2,15 @@ package main
 
 import (
 	"encoding/gob"
-	"net"
+	"fmt"
 )
 
 const (
-	PayTypText int8 = 0
-	PayTypJoin      = 1
-	PayTypPlayers   = 2
-	PayTypPlot      = 3
-	PayTypChat      = 4
+	PayTypText    int8 = 0
+	PayTypJoin    int8 = 1
+	PayTypPlayers int8 = 2
+	PayTypPlot    int8 = 3
+	PayTypChat    int8 = 4
 )
 
 type Msg struct {
@@ -19,36 +19,34 @@ type Msg struct {
 	Count int32
 }
 
-func (m Msg) Write(con net.Conn) error {
-	enc := gob.NewEncoder(con)
+func (m Msg) Write(enc *gob.Encoder) error {
 	return enc.Encode(m)
 }
 
 
-func (m *Msg) Read(con net.Conn) error {
-	dec := gob.NewDecoder(con)
+func (m *Msg) Read(dec *gob.Decoder) error {
 	return dec.Decode(m)
 }
 
 
-func (p *Plot) Read(con net.Conn) error {
-	dec := gob.NewDecoder(con)
+func (p *Plot) Read(dec *gob.Decoder) error {
 	return dec.Decode(p)
 }
 
 
-func (p Plot) Write(con net.Conn) error {
-	enc := gob.NewEncoder(con)
+func (p *Plot) Write(enc *gob.Encoder) error {
 	return enc.Encode(p)
 }
 
 
-func (w *World) Write(con net.Conn) error {
-	for x := 0; x < WorldWidth; x += 1 {
-		for y := 0; y < WorldHeight; y += 1 {
-			err := w.Plots[x][y].Write(con)
-
-			if err != nil { return err }
+func (w *World) Write(enc *gob.Encoder) error {
+	for x := 0; x < len(w.Plots); x += 1 {
+		for y := 0; y < len(w.Plots[x]); y += 1 {
+			err := w.Plots[x][y].Write(enc)
+			if err != nil {
+				fmt.Println("World Write error")
+				return err
+			}
 		}
 	}
 
@@ -56,12 +54,10 @@ func (w *World) Write(con net.Conn) error {
 }
 
 
-func (p *Player) Read(con net.Conn) error {
-	dec := gob.NewDecoder(con)
+func (p *Player) Read(dec *gob.Decoder) error {
 	return dec.Decode(p)
 }
 
-func (p Player) Write(con net.Conn) error {
-	enc := gob.NewEncoder(con)
+func (p *Player) Write(enc *gob.Encoder) error {
 	return enc.Encode(p)
 }

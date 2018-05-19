@@ -16,18 +16,18 @@ const (
 )
 
 const (
-	WorldWidth = 80
-	WorldHeight = 32
+	WorldWidth = 200
+	WorldHeight = 200
 	ViewWidth = 80
 	ViewHeight = 32
 )
 
 type Plot struct {
-	X, Y int
 	Explored int64
 	Elevation float32
 	Unit PlotUnit
 	Tile PlotTile
+	X, Y int
 }
 
 type World struct {
@@ -72,7 +72,7 @@ func (p *Plot) SpawnUnit(unitType int, owner *Player) (*PlotUnit, string) {
 		return nil, "Couldn't spawn " + Units[unitType].Name + " in occupied plot!"
 	}
 	p.Unit = Units[unitType]
-	p.Unit.Owner = owner
+	p.Unit.OwnerID = owner.ID
 
 	return &p.Unit, fmt.Sprintf("%v spawned!", Units[unitType].Name)
 }
@@ -121,6 +121,30 @@ func (w *World) avgPatchElevation(cx, cy int) float32 {
 	return avg / float32(n)
 }
 
+func (w *World) Reveal(x, y, r int, playerId int64) (min_x, min_y, max_x, max_y int) {
+	min_x, max_x = max(x - r, 0), min(x + r, len(w.Plots)-1)
+	min_y, max_y = max(y - r / 2, 0), min(y + r / 2, len(w.Plots[0])-1)
+
+	for i := min_x; i <= max_x; i += 1 {
+		for j := min_y; j <= max_y; j += 1 {
+			// dx, dy := x - i, y - j
+			// dist := (dx * dx) + (dy * dy)//math.Sqrt(math.Pow(float64(x-i) / 2, 2) + math.Pow(float64(y-j), 2))
+			// if dist <= (r * r) {
+			// 	w.Plots[i][j].Explored |= playerId
+			// }
+
+			// w.Plots[i][j].Explored = 0
+
+			w.Plots[i][j].Explored |= playerId
+		}
+	}
+
+	// min_x, min_y = 0, 0
+	// max_x, max_y = 199, 199
+
+	return
+}
+
 func (w *World) Init(seed int64) {
 	if w.R == nil {
 		w.R = rand.New(rand.NewSource(seed))
@@ -133,12 +157,7 @@ func (w *World) Init(seed int64) {
 			plot := &w.Plots[x][y]
 
 			plot.X, plot.Y = x, y
-
-			// dist := math.Sqrt(math.Pow(float64(x-w.Cam.X) / 2, 2) + math.Pow(float64(y-w.Cam.Y), 2))
-			// if dist <= 5 {
-			// 	plot.Explored = 1
-			// }
-			plot.Explored = 1
+			plot.Explored = 0
 
 			if x == 0 || x == width - 1 || y == 0 || y == height - 1 {
 				plot.Elevation = -1;
