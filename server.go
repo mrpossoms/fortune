@@ -9,7 +9,8 @@ import (
 
 
 func GameServer(ln net.Listener) {
-	var playerPool [32]Player
+	var playerPool [64]Player
+
 	players := playerPool[0:0]
 
 	GameWorld = World {
@@ -30,14 +31,19 @@ func GameServer(ln net.Listener) {
 			// handle error
 		}
 
-		// connHandler :=
-		enc := gob.NewEncoder(conn)
-		dec := gob.NewDecoder(conn)
-
 		fmt.Println("Connection incoming")
 		go func() {
 			msg := Msg{ Type: PayTypJoin, Count:1 }
 			player := Player{ ID: 1 << uint(len(players))}
+
+			pconn := PlayerConnection{
+				Conn: conn,
+				Index: PlayerIndex(player.ID),
+				ID: player.ID,
+				Enc: gob.NewEncoder(conn),
+				Dec: gob.NewDecoder(conn),
+			}
+			PlayerConns[PlayerIndex(player.ID)] = pconn
 
 			// Find a place for them to start
 			start:=GameWorld.FindLivablePlot()
@@ -50,16 +56,16 @@ func GameServer(ln net.Listener) {
 			player.MoveCursorTo(start.X, start.Y)
 
 			// Send the initial empty player object
-			if err := msg.Write(enc); err != nil { panic(err) }
-			if err := player.Write(enc); err != nil { panic(err) }
+			if err := msg.Write(pconn.Enc); err != nil { panic(err) }
+			if err := player.Write(pconn.Enc); err != nil { panic(err) }
 
 			// Continuous message handling
 			for {
-				msg.Read(dec)
+				msg.Read(pconn.Dec)
 
 				switch {
 				case msg.Type == PayTypJoin:
-					player.Read(dec)
+					player.Read(pconn.Dec)
 					players = append(players, player)
 					fmt.Println(players[len(players)-1].Name + " has joined the game")
 
@@ -67,12 +73,12 @@ func GameServer(ln net.Listener) {
 					fmt.Printf("(%d, %d) -> (%d, %d)\n", min_x, min_y, max_x, max_y)
 
 					// Send only their visible part of the map
-					Msg{ Type: PayTypPlot, Count: int32((1 + max_x - min_x) * (1 + max_y - min_y)) }.Write(enc)
+					Msg{ Type: PayTypPlot, Count: int32((1 + max_x - min_x) * (1 + max_y - min_y)) }.Write(pconn.Enc)
 					for x := min_x; x <= max_x; x += 1 {
 						for y := min_y; y <= max_y; y += 1 {
 							plot:=&GameWorld.Plots[x][y]
 
-							if err := plot.Write(enc); err != nil {
+							if err := plot.Write(pconn.Enc); err != nil {
 								fmt.Println("Sending map failed!")
 							}
 						}
@@ -80,14 +86,30 @@ func GameServer(ln net.Listener) {
 
 					// Spawn their village
 					start.SpawnUnit(UnitVillage, &player)
-					Msg{ Type: PayTypPlot, Count: 1 }.Write(enc)
-					start.Write(enc)
+					Msg{ Type: PayTypPlot, Count: 1 }.Write(pconn.Enc)
+					start.Write(pconn.Enc)
+
+					// for j := 0; j < len(players); j += 1 {
+					// 	Msg{ Type: PayTypPlayer, Count: int32(len(players))}.Write(PlayerConns[j].Enc)
+					// 	for i := 0; i < len(players); i += 1 {
+					// 		players[i].Write(PlayerConns[j].Enc)
+					// 	}
+					// }
+
 
 					// Send all the players
-					Msg{ Type: PayTypPlayer, Count: int32(len(players))}.Write(enc)
+					// Msg{ Type: PayTypPlayer, Count: int32(len(players))}.Broadcast(players, func (c *PlayerConnection) {
+					// 	for i := 0; i < len(players); i += 1 {
+					// 		players[i].Write(c.Enc)
+					// 	}
+					// })
+					//
+
+					Msg{ Type: PayTypPlayer, Count: int32(len(players))}.Broadcast(players)
 					for i := 0; i < len(players); i += 1 {
-						players[i].Write(enc)
+						players[i].Broadcast(players)
 					}
+
 				}
 
 				msg.Type = -1

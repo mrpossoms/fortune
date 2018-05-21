@@ -40,7 +40,8 @@ func PlayerFromID(id int64) *Player {
 
 func PlayerIndex(id int64) int {
 	i := 0
-	for ; id > 0; i += 1 {
+
+	for id >>= 1; id > 0; i += 1 {
 		id >>= 1
 	}
 

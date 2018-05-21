@@ -157,7 +157,7 @@ func (w *World) Init(seed int64) {
 			plot := &w.Plots[x][y]
 
 			plot.X, plot.Y = x, y
-			plot.Explored = 0
+			// plot.Explored = 0
 
 			if x == 0 || x == width - 1 || y == 0 || y == height - 1 {
 				plot.Elevation = -1;

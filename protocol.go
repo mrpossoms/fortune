@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/gob"
+	"net"
 	"fmt"
 )
 
@@ -18,6 +19,29 @@ type Msg struct {
 	Type int8
 	Count int32
 }
+
+
+type PlayerConnection struct {
+	Conn net.Conn
+	Index int
+	ID int64
+
+	Enc *gob.Encoder
+	Dec *gob.Decoder
+}
+
+
+func (m Msg) Broadcast(players []Player) error {
+	var err error
+
+	for i := 0; i < len(players); i += 1 {
+		idx := PlayerIndex(players[i].ID)
+		err = m.Write(PlayerConns[idx].Enc)
+	}
+
+	return err
+}
+
 
 func (m Msg) Write(enc *gob.Encoder) error {
 	return enc.Encode(m)
@@ -58,6 +82,19 @@ func (p *Player) Read(dec *gob.Decoder) error {
 	return dec.Decode(p)
 }
 
-func (p *Player) Write(enc *gob.Encoder) error {
+
+func (p Player) Write(enc *gob.Encoder) error {
 	return enc.Encode(p)
+}
+
+
+func (p *Player) Broadcast(players []Player) error {
+	var err error
+
+	for i := 0; i < len(players); i += 1 {
+		idx := PlayerIndex(players[i].ID)
+		err = p.Write(PlayerConns[idx].Enc)
+	}
+
+	return err
 }

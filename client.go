@@ -7,8 +7,9 @@ import (
 	"os"
 	"golang.org/x/sync/semaphore"
 	"context"
-	// "fmt"
+	"fmt"
 	"encoding/gob"
+	// "time"
 )
 
 
@@ -34,29 +35,31 @@ func GameClient() {
 	joinSem.Acquire(ctx, 2)
 
 	go func(){
+		msg := Msg{}
 		for {
-			hdr := Msg{}
-			if err:= hdr.Read(dec); err != nil {
+			if err:= msg.Read(dec); err != nil {
 				panic(err)
 			}
 
-			switch (hdr.Type) {
+			switch (msg.Type) {
 			case PayTypJoin:
 				player.Read(dec)
 
+
+				// player.Name = "mrpossoms"
+
 				GfxInit()
 				GfxDrawBegin()
-				// player.Name = "mrpossoms"//GfxPrompt("Type your name")
 				player.Name = GfxPrompt("Type your name")
 
 
-				hdr.Write(enc)
+				msg.Write(enc)
 				player.Write(enc)
 				joinSem.Release(1)
 				break
 			case PayTypPlot:
 				var plot Plot
-				for i := 0; i < int(hdr.Count); i += 1 {
+				for i := 0; i < int(msg.Count); i += 1 {
 					plot.Read(dec)
 					GameWorld.Plots[plot.X][plot.Y] = plot
 				}
@@ -64,21 +67,23 @@ func GameClient() {
 				if !gotMap {
 					gotMap = true
 					joinSem.Release(1)
-				} else {
-					termbox.Interrupt()
 				}
 
 				break
 			case PayTypPlayer:
 				player := Player{}
-				for i := 0; i < int(hdr.Count); i += 1 {
+				for i := 0; i < int(msg.Count); i += 1 {
 					player.Read(dec)
 					*PlayerFromID(player.ID) = player
+					GfxMsg(fmt.Sprintf("%v joined the game", player.Name))
+					// fmt.Println(player.Name + " joined the game")
 				}
 				break
 			}
 
 			termbox.Interrupt()
+			msg.Type = -1
+
 		}
 
 		conn.Close()
@@ -117,8 +122,8 @@ func GameClient() {
 		}
 
 		{
-			x, y := player.Cursor.X, player.Cursor.Y
-			GameWorld.Plots[x][y].Explored = 1
+			// x, y := player.Cursor.X, player.Cursor.Y
+			// GameWorld.Plots[x][y].Explored = 1
 		}
 	}
 /*
