@@ -8,12 +8,13 @@ import (
 )
 
 var GameWorld World
+var Players [64]Player
 
 func main() {
 	ln, err := net.Listen("tcp", ":31337")
 
 	if err != nil {
-		//Intro()
+		Intro()
 
 		GameWorld = World {
 			Smoothness: 2,

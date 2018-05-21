@@ -70,10 +70,10 @@ const (
 func (u *PlotUnit) Description(descType int) string {
 	desc := u.Name
 
-	// TODO
-	// if u.Owner != nil {
-	// 	desc = u.Owner.Name + " " + desc
-	// }
+	owner := PlayerFromID(u.OwnerID)
+	if owner != nil {
+	 	desc = owner.Name + "'s " + desc
+	}
 
 	return desc
 }

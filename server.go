@@ -42,20 +42,6 @@ func GameServer(ln net.Listener) {
 			// Find a place for them to start
 			start:=GameWorld.FindLivablePlot()
 
-			min_x, min_y, max_x, max_y := GameWorld.Reveal(start.X, start.Y, 4, player.ID)
-			fmt.Printf("(%d, %d) -> (%d, %d)\n", min_x, min_y, max_x, max_y)
-			// Send only their visible part of the map
-			Msg{ Type: PayTypPlot, Count: int32((1 + max_x - min_x) * (1 + max_y - min_y)) }.Write(enc)
-			for x := min_x; x <= max_x; x += 1 {
-				for y := min_y; y <= max_y; y += 1 {
-					plot:=&GameWorld.Plots[x][y]
-
-					if err := plot.Write(enc); err != nil {
-						fmt.Println("Sending map failed!")
-					}
-				}
-			}
-
 			// player view and cam setup
 			player.Cam.X, player.Cam.Y = WorldWidth / 2, WorldHeight / 2
 			player.Cursor.X, player.Cursor.Y = player.Cam.X, player.Cam.Y
@@ -77,10 +63,31 @@ func GameServer(ln net.Listener) {
 					players = append(players, player)
 					fmt.Println(players[len(players)-1].Name + " has joined the game")
 
+					min_x, min_y, max_x, max_y := GameWorld.Reveal(start.X, start.Y, 4, player.ID)
+					fmt.Printf("(%d, %d) -> (%d, %d)\n", min_x, min_y, max_x, max_y)
+
+					// Send only their visible part of the map
+					Msg{ Type: PayTypPlot, Count: int32((1 + max_x - min_x) * (1 + max_y - min_y)) }.Write(enc)
+					for x := min_x; x <= max_x; x += 1 {
+						for y := min_y; y <= max_y; y += 1 {
+							plot:=&GameWorld.Plots[x][y]
+
+							if err := plot.Write(enc); err != nil {
+								fmt.Println("Sending map failed!")
+							}
+						}
+					}
+
 					// Spawn their village
 					start.SpawnUnit(UnitVillage, &player)
 					Msg{ Type: PayTypPlot, Count: 1 }.Write(enc)
 					start.Write(enc)
+
+					// Send all the players
+					Msg{ Type: PayTypPlayer, Count: int32(len(players))}.Write(enc)
+					for i := 0; i < len(players); i += 1 {
+						players[i].Write(enc)
+					}
 				}
 
 				msg.Type = -1

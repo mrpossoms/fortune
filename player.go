@@ -33,6 +33,20 @@ type Player struct {
 }
 
 
+func PlayerFromID(id int64) *Player {
+	return &Players[PlayerIndex(id)]
+}
+
+
+func PlayerIndex(id int64) int {
+	i := 0
+	for ; id > 0; i += 1 {
+		id >>= 1
+	}
+
+	return i
+}
+
 func (p *Player) MoveCursor(dx, dy int) {
 	last_dist_x := abs(p.Cursor.X - p.Cam.X)
 	last_dist_y := abs(p.Cursor.Y - p.Cam.Y)

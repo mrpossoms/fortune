@@ -7,7 +7,7 @@ import (
 	"os"
 	"golang.org/x/sync/semaphore"
 	"context"
-	"fmt"
+	// "fmt"
 	"encoding/gob"
 )
 
@@ -40,15 +40,15 @@ func GameClient() {
 				panic(err)
 			}
 
-			fmt.Printf("[HDR %d %d] %d\n", hdr.Version, hdr.Type, hdr.Count)
-
 			switch (hdr.Type) {
 			case PayTypJoin:
 				player.Read(dec)
-				fmt.Println("Got Player object")
 
-				//GfxDrawBegin()
-				player.Name = "mrpossoms"//GfxPrompt("Type your name")
+				GfxInit()
+				GfxDrawBegin()
+				// player.Name = "mrpossoms"//GfxPrompt("Type your name")
+				player.Name = GfxPrompt("Type your name")
+
 
 				hdr.Write(enc)
 				player.Write(enc)
@@ -69,7 +69,16 @@ func GameClient() {
 				}
 
 				break
+			case PayTypPlayer:
+				player := Player{}
+				for i := 0; i < int(hdr.Count); i += 1 {
+					player.Read(dec)
+					*PlayerFromID(player.ID) = player
+				}
+				break
 			}
+
+			termbox.Interrupt()
 		}
 
 		conn.Close()
@@ -108,8 +117,8 @@ func GameClient() {
 		}
 
 		{
-			// x, y := player.Cursor.X, player.Cursor.Y
-			// GameWorld.Plots[x][y].Explored = 1
+			x, y := player.Cursor.X, player.Cursor.Y
+			GameWorld.Plots[x][y].Explored = 1
 		}
 	}
 /*

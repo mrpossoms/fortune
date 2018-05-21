@@ -8,7 +8,7 @@ import (
 const (
 	PayTypText    int8 = 0
 	PayTypJoin    int8 = 1
-	PayTypPlayers int8 = 2
+	PayTypPlayer  int8 = 2
 	PayTypPlot    int8 = 3
 	PayTypChat    int8 = 4
 )
