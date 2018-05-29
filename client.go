@@ -93,6 +93,7 @@ func GameClient() {
 	running := true
 
 	GfxInit()
+
 	for running {
 		GfxDrawBegin()
 
@@ -119,6 +120,11 @@ func GameClient() {
 		case rune('q'):
 			running = false
 			break
+		case rune('m'):
+			opts := []string{ "cheese dog", "mcdawg" }
+			GfxMenu("What u b?", opts, func(selection int) {
+				GfxMsg(fmt.Sprintf("ur a got dang %s", opts[selection]))
+			})
 		}
 
 		{
@@ -126,71 +132,4 @@ func GameClient() {
 			// GameWorld.Plots[x][y].Explored = 1
 		}
 	}
-/*
-	player := Player {
-		Name: "mrpossoms",
-		ID: 0x1,
-		Colors: PlayerColors{
-			Fg: termbox.ColorBlack,
-			Bg: termbox.ColorRed,
-		},
-	}
-
-	player.Cam.X, player.Cam.Y = WorldWidth / 2, WorldHeight / 2
-	player.Cam.View.Width = ViewWidth
-	player.Cam.View.Height = ViewHeight
-
-	start:=GameWorld.FindLivablePlot()
-
-	unit, msg := start.SpawnUnit(UnitVillage, &player)
-
-	if unit != nil {
-		player.MoveCursorTo(start.X, start.Y)
-	}
-	GfxMsg(msg)
-
-
-	GfxInit()
-	GfxMsg("Hello, world")
-
-
-
-	running := true
-
-	for running {
-		GfxDrawBegin()
-
-		GameWorld.GfxDraw(&player)
-
-		evt := GfxDrawFinish(true)
-
-		switch evt.Key {
-		case termbox.KeyArrowUp:
-			player.MoveCursor(0, -1)
-			break
-		case termbox.KeyArrowDown:
-			player.MoveCursor(0, 1)
-			break
-		case termbox.KeyArrowLeft:
-			player.MoveCursor(-1, 0)
-			break
-		case termbox.KeyArrowRight:
-			player.MoveCursor(1, 0)
-			break
-		}
-
-		switch evt.Ch {
-		case rune('q'):
-			running = false
-			break
-		}
-
-		{
-			x, y := player.Cursor.X, player.Cursor.Y
-			GameWorld.Plots[x][y].Explored = 1
-		}
-	}
-
-	GfxUninit()
-*/
 }

@@ -2,11 +2,20 @@ package main
 
 import (
 	"github.com/nsf/termbox-go"
+	"fmt"
 )
 
+type Menu struct {
+	title string
+	options []string
+	callback func(int)
+}
 
-var _gfxMsgQueue [10]string
-var MsgQueue = _gfxMsgQueue[0:0]
+var gfxMsgQueue [10]string
+var gfxMenus [10]Menu
+var gfxCurrentMenu Menu
+var MenuQueue = gfxMenus[0:0]
+var MsgQueue = gfxMsgQueue[0:0]
 var initialized bool
 
 func GfxInit() {
@@ -55,7 +64,31 @@ func gfxShowMsgs() {
 
 	gfxStringAt(w, h, m)
 
+	termbox.Flush()
+	termbox.PollEvent()
+
 	MsgQueue = MsgQueue[1:len(MsgQueue)]
+}
+
+
+func gfxShowMenus() {
+	menu := MenuQueue[0]
+	_, th := termbox.Size()
+	th >>= 1
+
+	gfxStringCenteredAt(th + 1, menu.title)
+	for i := 0; i < len(menu.options); i += 1 {
+		gfxStringCenteredAt(th + i + 2, fmt.Sprintf("%d %v", i + 1, menu.options[i]))
+	}
+
+	termbox.Flush()
+	i := int(termbox.PollEvent().Ch - '0') - 1
+
+	if i >= 0 && i < len(menu.options) {
+		menu.callback(i)
+	}
+
+	MenuQueue = MenuQueue[1:len(MenuQueue)]
 }
 
 
@@ -92,6 +125,15 @@ func GfxPrompt(prompt string) string {
 	termbox.Flush()
 
 	return input
+}
+
+
+func GfxMenu(title string, options []string, on_selection func(int)) {
+	MenuQueue = append(MenuQueue, Menu {
+		title: title,
+		options: options,
+		callback: on_selection,
+	})
 }
 
 
@@ -171,16 +213,18 @@ func GfxDrawBegin() {
 
 
 func GfxDrawFinish(poll bool) termbox.Event {
-	if len(MsgQueue) > 0 {
-		gfxShowMsgs()
-	}
-
-	termbox.Flush()
-
 	var evt termbox.Event
 
-	if poll {
-		evt = termbox.PollEvent()
+	if len(MsgQueue) > 0 {
+		gfxShowMsgs()
+	} else if len(MenuQueue) > 0 {
+		gfxShowMenus()
+	} else{
+		termbox.Flush()
+
+		if poll {
+			evt = termbox.PollEvent()
+		}
 	}
 
 	return evt
