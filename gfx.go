@@ -41,6 +41,7 @@ func GfxMsg(m string) {
 	MsgQueue = append(MsgQueue, m)
 }
 
+
 func gfxStringAt(x, y int, m string) {
 	m = " " + m + " "
 	for i := 0; i < len(m); i+= 1 {
@@ -48,12 +49,14 @@ func gfxStringAt(x, y int, m string) {
 	}
 }
 
+
 func gfxStringCenteredAt(y int, m string) {
 	w, _ := termbox.Size()
 	w = (w - len(m)) / 2
 
 	gfxStringAt(w, y, m)
 }
+
 
 func gfxShowMsgs() {
 	w, h := termbox.Size()

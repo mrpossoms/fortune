@@ -56,6 +56,83 @@ func (p *Plot) TerrainName() string {
 }
 
 
+func (p *Plot) Neighbors(world *World) []*Plot {
+	slice := make([]*Plot, 0, 8)
+
+	for i := -1; i <= 1; i += 1 {
+		for j := -1; j <= 1; j += 1 {
+			r, c := p.X + i, p.Y + j
+			if i | j == 0 { continue }
+			if r < 0 || r > WorldHeight { continue }
+			if c < 0 || c > WorldWidth { continue }
+			n := &world.Plots[r][c]
+			// GfxMsg(fmt.Sprintf("(%d, %d) -> (%d, %d) unit -> %d", r, c, n.X, n.Y, n.Unit.Type))
+
+			slice = append(slice, n)
+		}
+	}
+
+	return slice
+}
+
+
+func (p *Plot) HasNeighbor(world *World, neighbors []*Plot, unitType int, owner int64) bool {
+	for ni := 0; ni < len(neighbors); ni += 1 {
+		neighbor := neighbors[ni]
+		unit := neighbor.Unit
+		if unit.Type == unitType {
+			return true
+		}
+	}
+
+	return false
+}
+
+
+func (p *Plot) PossibleBuilds(world *World, owner int64) []int {
+	neighbors := p.Neighbors(world)
+	nextToVillage := p.HasNeighbor(world, neighbors, UnitVillage, owner)
+	nextToCity := p.HasNeighbor(world, neighbors, UnitCity, owner)
+	nextToFarm := p.HasNeighbor(world, neighbors, UnitFarm, owner)
+	
+	buildables := make([]int, 0, 10)
+
+	if p.Unit.Type != UnitNone {
+		return buildables
+	}
+
+	switch {
+	case p.Elevation < PlotSea:
+		break
+	case  p.Elevation < PlotBeach:
+		if nextToVillage || nextToCity {
+			buildables = append(buildables, UnitCity)
+			buildables = append(buildables, UnitVillage)
+		}
+		break
+	case p.Elevation < PlotPlains:
+		if nextToVillage || nextToCity || nextToFarm {
+			buildables = append(buildables, UnitCity)
+			buildables = append(buildables, UnitVillage)
+			buildables = append(buildables, UnitFarm)
+		}
+		break
+	case  p.Elevation < PlotForest:
+		if nextToVillage || nextToCity || nextToFarm {
+			buildables = append(buildables, UnitCity)
+			buildables = append(buildables, UnitVillage)
+			buildables = append(buildables, UnitFarm)
+		}
+	case p.Elevation < PlotMountain:
+		if nextToVillage || nextToCity || nextToFarm {
+			buildables = append(buildables, UnitMine)
+		}
+	}
+
+	return buildables
+}
+
+
 func (p *Plot) Description(descType int) string {
 	desc := fmt.Sprintf("%v (%d,%d)", p.TerrainName(), p.X, p.Y)
 
@@ -75,6 +152,22 @@ func (p *Plot) SpawnUnit(unitType int, owner *Player) (*PlotUnit, string) {
 	p.Unit.OwnerID = owner.ID
 
 	return &p.Unit, fmt.Sprintf("%v spawned!", Units[unitType].Name)
+}
+
+
+func (p *Plot) BuildMenu(world *World, owner int64) {
+	buildables := p.PossibleBuilds(world, owner)
+	options := [10]string{}
+	optSlice := options[0:0]
+
+	for i := 0; i < len(buildables); i += 1 {
+		ui := buildables[i]
+		optSlice = append(optSlice, Units[ui].Name)
+	}
+
+	GfxMenu("These units can be built here", optSlice, func(selection int) {
+		GfxMsg(fmt.Sprintf("Selected %v", optSlice[selection]))
+	})
 }
 
 

@@ -116,6 +116,9 @@ func GameClient() {
 			break
 		}
 
+		x, y := player.Cursor.X, player.Cursor.Y
+		selectedPlot := &GameWorld.Plots[x][y]
+
 		switch evt.Ch {
 		case rune('q'):
 			running = false
@@ -125,6 +128,9 @@ func GameClient() {
 			GfxMenu("What u b?", opts, func(selection int) {
 				GfxMsg(fmt.Sprintf("ur a got dang %s", opts[selection]))
 			})
+			break
+		case rune('b'):
+			selectedPlot.BuildMenu(&GameWorld, player.ID)
 		}
 
 		{
