@@ -215,20 +215,20 @@ func (w *World) avgPatchElevation(cx, cy int) float32 {
 }
 
 func (w *World) Reveal(x, y, r int, playerId int64) (min_x, min_y, max_x, max_y int) {
-	min_x, max_x = max(x - r, 0), min(x + r, len(w.Plots)-1)
-	min_y, max_y = max(y - r / 2, 0), min(y + r / 2, len(w.Plots[0])-1)
+	min_x, max_x = max(x - r * 2, 0), min(x + r * 2, len(w.Plots)-1)
+	min_y, max_y = max(y - r, 0), min(y + r, len(w.Plots[0])-1)
 
 	for i := min_x; i <= max_x; i += 1 {
 		for j := min_y; j <= max_y; j += 1 {
-			// dx, dy := x - i, y - j
-			// dist := (dx * dx) + (dy * dy)//math.Sqrt(math.Pow(float64(x-i) / 2, 2) + math.Pow(float64(y-j), 2))
-			// if dist <= (r * r) {
-			// 	w.Plots[i][j].Explored |= playerId
-			// }
+			dx, dy := (x - i) / 2, y - j
+			// dist := math.Sqrt(math.Pow(float64(x-i) / 2, 2) + math.Pow(float64(y-j), 2))
+			dist := dx * dx + dy * dy
+			if dist <= (r * r) {
+				w.Plots[i][j].Explored |= playerId
+			}
 
 			// w.Plots[i][j].Explored = 0
-
-			w.Plots[i][j].Explored |= playerId
+			// w.Plots[i][j].Explored |= playerId
 		}
 	}
 
@@ -249,8 +249,10 @@ func (w *World) Init(seed int64) {
 		for y := 0; y < height; y += 1 {
 			plot := &w.Plots[x][y]
 
+			plot.Unit = Units[UnitNone]
 			plot.X, plot.Y = x, y
-			// plot.Explored = 0
+			plot.Explored = 0
+			plot.Unit.OwnerID = 0
 
 			if x == 0 || x == width - 1 || y == 0 || y == height - 1 {
 				plot.Elevation = -1;

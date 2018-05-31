@@ -157,8 +157,9 @@ func (w *World) GfxDraw(player *Player) {
 			if plot.Explored & player.ID > 0 {
 				if plot.Unit.Type != UnitNone {
 					// Man made
-					bg = termbox.ColorRed //plot.Unit.Owner.Colors.Bg
-					fg = termbox.ColorWhite //plot.Unit.Owner.Colors.Fg | plot.Unit.Attr
+					player := Players[plot.Unit.OwnerID]
+					bg = player.Colors.Bg
+					fg = player.Colors.Fg | plot.Unit.Attr
 					symbol = plot.Unit.Symbol
 				} else {
 					// Natural, unoccupied plot
@@ -204,8 +205,11 @@ func (w *World) GfxDraw(player *Player) {
 		}
 	}
 
-	if player.SelectedPlot(w).Explored & player.ID > 0 {
-		gfxStringCenteredAt(1, player.SelectedPlot(w).Description(UnitDescriptionShort))
+	selPlot := player.SelectedPlot(w)
+	if selPlot.Explored & player.ID > 0 {
+
+		gfxStringCenteredAt(1, selPlot.Description(UnitDescriptionShort))
+		gfxStringCenteredAt(2, fmt.Sprintf("player: %d, unit %d", selPlot.Unit.OwnerID, selPlot.Unit.Type))
 	}
 }
 

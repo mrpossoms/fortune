@@ -1,10 +1,10 @@
 package main
 
 import (
-	// "fmt"
+	"fmt"
 	"net"
 	// "time"
-	// "os"
+	"os"
 )
 
 var GameWorld World
@@ -13,6 +13,8 @@ var PlayerConns [64]PlayerConnection
 
 func main() {
 	ln, err := net.Listen("tcp", ":31337")
+
+	fmt.Println(os.Getpid())
 
 	if err != nil {
 		// Intro()

@@ -67,9 +67,9 @@ func GameServer(ln net.Listener) {
 				case msg.Type == PayTypJoin:
 					player.Read(pconn.Dec)
 					players = append(players, player)
-					fmt.Println(players[len(players)-1].Name + " has joined the game")
+					fmt.Printf("%v (%d) has joined the game\n", players[len(players)-1].Name, players[len(players)-1].ID)
 
-					min_x, min_y, max_x, max_y := GameWorld.Reveal(start.X, start.Y, 4, player.ID)
+					min_x, min_y, max_x, max_y := GameWorld.Reveal(start.X, start.Y, 3, player.ID)
 					fmt.Printf("(%d, %d) -> (%d, %d)\n", min_x, min_y, max_x, max_y)
 
 					// Send only their visible part of the map
@@ -114,12 +114,39 @@ func GameServer(ln net.Listener) {
 					updatedPlot := Plot{}
 					updatedPlot.Read(pconn.Dec)
 					x, y := updatedPlot.X, updatedPlot.Y
+					plot := GameWorld.Plots[x][y]
 
-					fmt.Printf("Got plot (%d,%d)", x, y)
+					// Make sure that unit is allowed to be built there
+					buildables := plot.PossibleBuilds(&GameWorld, pconn.ID)
+					isBuildableUnit := false
+					for i := 0; i < len(buildables); i += 1 {
+						if updatedPlot.Unit.Type == buildables[i] {
+							isBuildableUnit = true
+							break
+						}
+					}
 
-					GameWorld.Plots[x][y] = updatedPlot
-					Msg { Type: PayTypPlot, Count: 1 }.Write(pconn.Enc)
-					updatedPlot.Write(pconn.Enc)
+					fmt.Printf("Got plot (%d,%d)\n", x, y)
+					if isBuildableUnit {
+						GameWorld.Plots[x][y] = updatedPlot
+
+						min_x, min_y, max_x, max_y := GameWorld.Reveal(x, y, 2, player.ID)
+						fmt.Printf("(%d, %d) -> (%d, %d)\n", min_x, min_y, max_x, max_y)
+
+						// Send newly explored part of the map
+						Msg{ Type: PayTypPlot, Count: int32((1 + max_x - min_x) * (1 + max_y - min_y)) }.Write(pconn.Enc)
+						for x := min_x; x <= max_x; x += 1 {
+							for y := min_y; y <= max_y; y += 1 {
+								plot:=&GameWorld.Plots[x][y]
+
+								// fmt.Printf("(%d, %d) O:%d U:%d\n", plot.X, plot.Y, plot.Unit.OwnerID, plot.Unit.Type)
+
+								if err := plot.Write(pconn.Enc); err != nil {
+									fmt.Println("Sending map failed!")
+								}
+							}
+						}
+					}
 
 					break
 				}

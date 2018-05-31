@@ -55,8 +55,8 @@ func GameClient() {
 				joinSem.Release(1)
 				break
 			case PayTypPlot:
-				var plot Plot
 				for i := 0; i < int(msg.Count); i += 1 {
+					plot := Plot{}
 					plot.Read(dec)
 					GameWorld.Plots[plot.X][plot.Y] = plot
 				}
