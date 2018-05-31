@@ -45,9 +45,6 @@ func GameClient() {
 			case PayTypJoin:
 				player.Read(dec)
 
-
-				// player.Name = "mrpossoms"
-
 				GfxInit()
 				GfxDrawBegin()
 				player.Name = GfxPrompt("Type your name")
@@ -130,7 +127,13 @@ func GameClient() {
 			})
 			break
 		case rune('b'):
-			selectedPlot.BuildMenu(&GameWorld, player.ID)
+			selectedPlot.BuildMenu(&GameWorld, player.ID, func(selection int) {
+				updatedPlot := *selectedPlot
+				updatedPlot.Unit = Units[selection]
+				updatedPlot.Unit.OwnerID = player.ID
+				Msg { Type: PayTypPlot, Count: 1 }.Write(enc)
+				updatedPlot.Write(enc)
+			})
 		}
 
 		{

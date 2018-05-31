@@ -94,7 +94,7 @@ func (p *Plot) PossibleBuilds(world *World, owner int64) []int {
 	nextToVillage := p.HasNeighbor(world, neighbors, UnitVillage, owner)
 	nextToCity := p.HasNeighbor(world, neighbors, UnitCity, owner)
 	nextToFarm := p.HasNeighbor(world, neighbors, UnitFarm, owner)
-	
+
 	buildables := make([]int, 0, 10)
 
 	if p.Unit.Type != UnitNone {
@@ -155,7 +155,7 @@ func (p *Plot) SpawnUnit(unitType int, owner *Player) (*PlotUnit, string) {
 }
 
 
-func (p *Plot) BuildMenu(world *World, owner int64) {
+func (p *Plot) BuildMenu(world *World, owner int64, onSelection func(int)) {
 	buildables := p.PossibleBuilds(world, owner)
 	options := [10]string{}
 	optSlice := options[0:0]
@@ -166,7 +166,7 @@ func (p *Plot) BuildMenu(world *World, owner int64) {
 	}
 
 	GfxMenu("These units can be built here", optSlice, func(selection int) {
-		GfxMsg(fmt.Sprintf("Selected %v", optSlice[selection]))
+		onSelection(buildables[selection])
 	})
 }
 

@@ -110,6 +110,18 @@ func GameServer(ln net.Listener) {
 						players[i].Broadcast(players)
 					}
 
+				case msg.Type == PayTypPlot:
+					updatedPlot := Plot{}
+					updatedPlot.Read(pconn.Dec)
+					x, y := updatedPlot.X, updatedPlot.Y
+
+					fmt.Printf("Got plot (%d,%d)", x, y)
+
+					GameWorld.Plots[x][y] = updatedPlot
+					Msg { Type: PayTypPlot, Count: 1 }.Write(pconn.Enc)
+					updatedPlot.Write(pconn.Enc)
+
+					break
 				}
 
 				msg.Type = -1
