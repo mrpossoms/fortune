@@ -77,6 +77,20 @@ func (w *World) Write(enc *gob.Encoder) error {
 	return nil
 }
 
+func (w *World) WriteRegion(enc *gob.Encoder, region Region) error {
+	for x := region.Min.X; x <= region.Max.X; x += 1 {
+		for y := region.Min.Y; y <= region.Max.Y; y += 1 {
+			plot:=&w.Plots[x][y]
+
+			if err := plot.Write(enc); err != nil {
+				fmt.Println("Sending map failed!")
+			}
+		}
+	}
+
+	return nil
+}
+
 
 func (p *Player) Read(dec *gob.Decoder) error {
 	return dec.Decode(p)

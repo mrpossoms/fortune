@@ -13,6 +13,21 @@ import (
 // 	return 0
 // }
 
+type Point struct {
+	X, Y int
+}
+
+type Region struct {
+	Min Point
+	Max Point
+}
+
+
+func (r *Region) Area() int {
+	return (1 + r.Max.X - r.Min.X) * (1 + r.Max.Y - r.Min.Y)
+}
+
+
 func Gauss2D(x, y, muX, muY, sigX, sigY float32) float32 {
 	deno := float64(sigX + sigY) * math.Sqrt(2.0 * math.Pi)
 

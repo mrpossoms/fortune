@@ -24,6 +24,32 @@ func GameServer(ln net.Listener) {
 	}
 	fmt.Println("DONE")
 
+	// Game update
+	gameTime := 0
+	go func() {
+		updateTicker := time.NewTicker(time.Second)
+
+		for {
+			<-updateTicker.C
+			GameWorld.Tick(gameTime)
+
+			var plots [WorldWidth * WorldHeight]*Plot
+
+			for pi := 0; pi < len(players); pi += 1 {
+				pconn := PlayerConns[pi]
+				changed := GameWorld.ChangedPlots(plots[0:0], gameTime, pconn.ID)
+
+				Msg{ Type: PayTypPlot, Count: int32(len(changed)) }.Write(pconn.Enc)
+
+				for ci := 0; ci < len(changed); ci += 1 {
+					changed[ci].Write(pconn.Enc)
+				}
+			}
+
+			gameTime += 1
+		}
+	}()
+
 	// Accept and handle connections
 	for {
 		conn, err := ln.Accept()
@@ -69,41 +95,25 @@ func GameServer(ln net.Listener) {
 					players = append(players, player)
 					fmt.Printf("%v (%d) has joined the game\n", players[len(players)-1].Name, players[len(players)-1].ID)
 
-					min_x, min_y, max_x, max_y := GameWorld.Reveal(start.X, start.Y, 3, player.ID)
-					fmt.Printf("(%d, %d) -> (%d, %d)\n", min_x, min_y, max_x, max_y)
+					region := GameWorld.Reveal(start.X, start.Y, 3, player.ID)
 
 					// Send only their visible part of the map
-					Msg{ Type: PayTypPlot, Count: int32((1 + max_x - min_x) * (1 + max_y - min_y)) }.Write(pconn.Enc)
-					for x := min_x; x <= max_x; x += 1 {
-						for y := min_y; y <= max_y; y += 1 {
-							plot:=&GameWorld.Plots[x][y]
-
-							if err := plot.Write(pconn.Enc); err != nil {
-								fmt.Println("Sending map failed!")
-							}
-						}
-					}
+					Msg{ Type: PayTypPlot, Count: int32(region.Area()) }.Write(pconn.Enc)
+					// for x := min_x; x <= max_x; x += 1 {
+					// 	for y := min_y; y <= max_y; y += 1 {
+					// 		plot:=&GameWorld.Plots[x][y]
+					//
+					// 		if err := plot.Write(pconn.Enc); err != nil {
+					// 			fmt.Println("Sending map failed!")
+					// 		}
+					// 	}
+					// }
+					GameWorld.WriteRegion(pconn.Enc, region)
 
 					// Spawn their village
 					start.SpawnUnit(UnitVillage, &player)
 					Msg{ Type: PayTypPlot, Count: 1 }.Write(pconn.Enc)
 					start.Write(pconn.Enc)
-
-					// for j := 0; j < len(players); j += 1 {
-					// 	Msg{ Type: PayTypPlayer, Count: int32(len(players))}.Write(PlayerConns[j].Enc)
-					// 	for i := 0; i < len(players); i += 1 {
-					// 		players[i].Write(PlayerConns[j].Enc)
-					// 	}
-					// }
-
-
-					// Send all the players
-					// Msg{ Type: PayTypPlayer, Count: int32(len(players))}.Broadcast(players, func (c *PlayerConnection) {
-					// 	for i := 0; i < len(players); i += 1 {
-					// 		players[i].Write(c.Enc)
-					// 	}
-					// })
-					//
 
 					Msg{ Type: PayTypPlayer, Count: int32(len(players))}.Broadcast(players)
 					for i := 0; i < len(players); i += 1 {
@@ -130,22 +140,21 @@ func GameServer(ln net.Listener) {
 					if isBuildableUnit {
 						GameWorld.Plots[x][y] = updatedPlot
 
-						min_x, min_y, max_x, max_y := GameWorld.Reveal(x, y, 2, player.ID)
-						fmt.Printf("(%d, %d) -> (%d, %d)\n", min_x, min_y, max_x, max_y)
+						region := GameWorld.Reveal(x, y, 2, player.ID)
+						// fmt.Printf("(%d, %d) -> (%d, %d)\n", min_x, min_y, max_x, max_y)
 
 						// Send newly explored part of the map
-						Msg{ Type: PayTypPlot, Count: int32((1 + max_x - min_x) * (1 + max_y - min_y)) }.Write(pconn.Enc)
-						for x := min_x; x <= max_x; x += 1 {
-							for y := min_y; y <= max_y; y += 1 {
-								plot:=&GameWorld.Plots[x][y]
-
-								// fmt.Printf("(%d, %d) O:%d U:%d\n", plot.X, plot.Y, plot.Unit.OwnerID, plot.Unit.Type)
-
-								if err := plot.Write(pconn.Enc); err != nil {
-									fmt.Println("Sending map failed!")
-								}
-							}
-						}
+						Msg{ Type: PayTypPlot, Count: int32(region.Area()) }.Write(pconn.Enc)
+						// for x := min_x; x <= max_x; x += 1 {
+						// 	for y := min_y; y <= max_y; y += 1 {
+						// 		plot:=&GameWorld.Plots[x][y]
+						//
+						// 		if err := plot.Write(pconn.Enc); err != nil {
+						// 			fmt.Println("Sending map failed!")
+						// 		}
+						// 	}
+						// }
+						GameWorld.WriteRegion(pconn.Enc, region)
 					}
 
 					break

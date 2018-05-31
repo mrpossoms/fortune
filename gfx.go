@@ -207,9 +207,12 @@ func (w *World) GfxDraw(player *Player) {
 
 	selPlot := player.SelectedPlot(w)
 	if selPlot.Explored & player.ID > 0 {
-
 		gfxStringCenteredAt(1, selPlot.Description(UnitDescriptionShort))
-		gfxStringCenteredAt(2, fmt.Sprintf("player: %d, unit %d", selPlot.Unit.OwnerID, selPlot.Unit.Type))
+
+		if selPlot.Unit.Type != UnitNone {
+			resources := selPlot.Unit.Resources
+			gfxStringCenteredAt(2, fmt.Sprintf("$: %0.2f | %0.2f $/sec", resources.Current, resources.Rate))
+		}
 	}
 }
 

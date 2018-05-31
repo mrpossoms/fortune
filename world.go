@@ -28,6 +28,7 @@ type Plot struct {
 	Unit PlotUnit
 	Tile PlotTile
 	X, Y int
+	Updated int
 }
 
 type World struct {
@@ -171,6 +172,12 @@ func (p *Plot) BuildMenu(world *World, owner int64, onSelection func(int)) {
 }
 
 
+func (p *Plot) Tick(tick int) {
+	p.Unit.Resources.Current += p.Unit.Resources.Rate
+	p.Updated = tick
+}
+
+
 func (p *Plot) ProductionRate() float32 {
 	switch {
 	case p.Elevation <= PlotSea:
@@ -187,6 +194,21 @@ func (p *Plot) ProductionRate() float32 {
 
 func (p *Plot) IsLivable() bool {
 	return p.Elevation > PlotSea && p.Elevation < PlotForest
+}
+
+
+func (w *World) ChangedPlots(plots []*Plot, tick int, playerMsk int64) []*Plot {
+	for x := 0; x < len(w.Plots); x += 1 {
+		for y := 0; y < len(w.Plots[x]); y += 1 {
+			plot := &w.Plots[x][y]
+
+			if plot.Explored | playerMsk > 0 && plot.Updated == tick {
+				plots = append(plots, plot)
+			}
+		}
+	}
+
+	return plots
 }
 
 
@@ -214,9 +236,10 @@ func (w *World) avgPatchElevation(cx, cy int) float32 {
 	return avg / float32(n)
 }
 
-func (w *World) Reveal(x, y, r int, playerId int64) (min_x, min_y, max_x, max_y int) {
-	min_x, max_x = max(x - r * 2, 0), min(x + r * 2, len(w.Plots)-1)
-	min_y, max_y = max(y - r, 0), min(y + r, len(w.Plots[0])-1)
+
+func (w *World) Reveal(x, y, r int, playerId int64) Region {
+	min_x, max_x := max(x - r * 2, 0), min(x + r * 2, len(w.Plots)-1)
+	min_y, max_y := max(y - r, 0), min(y + r, len(w.Plots[0])-1)
 
 	for i := min_x; i <= max_x; i += 1 {
 		for j := min_y; j <= max_y; j += 1 {
@@ -235,8 +258,19 @@ func (w *World) Reveal(x, y, r int, playerId int64) (min_x, min_y, max_x, max_y 
 	// min_x, min_y = 0, 0
 	// max_x, max_y = 199, 199
 
-	return
+	return Region{ Min: Point{ min_x, min_y }, Max: Point{ max_x, max_y }}
 }
+
+
+func (w *World) Tick(tick int) {
+	width, height := len(w.Plots), len(w.Plots[0])
+	for x := 0; x < width; x += 1 {
+		for y := 0; y < height; y += 1 {
+			w.Plots[x][y].Tick(tick)
+		}
+	}
+}
+
 
 func (w *World) Init(seed int64) {
 	if w.R == nil {
