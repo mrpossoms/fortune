@@ -29,12 +29,12 @@ type Plot struct {
 	Tile PlotTile
 	X, Y int
 	Updated int
+	Tag int16
 }
 
 type World struct {
 	Plots [WorldWidth][WorldHeight]Plot
 	Smoothness int
-
 	R *rand.Rand
 }
 
@@ -94,12 +94,14 @@ func (p *Plot) PossibleBuilds(world *World, owner int64) []int {
 	unitCity := UnitIndex("city")
 	unitVillage := UnitIndex("village")
 	unitFarm := UnitIndex("farm")
+	unitRoad := UnitIndex("road")
 	unitMine := UnitIndex("mine")
 
 	neighbors := p.Neighbors(world)
 	nextToVillage := p.HasNeighbor(world, neighbors, unitVillage, owner)
 	nextToCity := p.HasNeighbor(world, neighbors, unitCity, owner)
 	nextToFarm := p.HasNeighbor(world, neighbors, unitFarm, owner)
+	nextToRoad := p.HasNeighbor(world, neighbors, unitRoad, owner)
 
 	buildables := make([]int, 0, 10)
 
@@ -116,6 +118,9 @@ func (p *Plot) PossibleBuilds(world *World, owner int64) []int {
 		if nextToVillage || nextToCity {
 			buildables = append(buildables, unitCity)
 			buildables = append(buildables, unitVillage)
+			buildables = append(buildables, unitRoad)
+		} else if nextToRoad {
+			buildables = append(buildables, unitRoad)
 		}
 		break
 	case p.Elevation < PlotPlains:
@@ -123,6 +128,9 @@ func (p *Plot) PossibleBuilds(world *World, owner int64) []int {
 			buildables = append(buildables, unitCity)
 			buildables = append(buildables, unitVillage)
 			buildables = append(buildables, unitFarm)
+			buildables = append(buildables, unitRoad)
+		} else if nextToRoad {
+			buildables = append(buildables, unitRoad)
 		}
 		break
 	case  p.Elevation < PlotForest:
@@ -130,10 +138,16 @@ func (p *Plot) PossibleBuilds(world *World, owner int64) []int {
 			buildables = append(buildables, unitCity)
 			buildables = append(buildables, unitVillage)
 			buildables = append(buildables, unitFarm)
+			buildables = append(buildables, unitRoad)
+		} else if nextToRoad {
+			buildables = append(buildables, unitRoad)
 		}
 	case p.Elevation < PlotMountain:
 		if nextToVillage || nextToCity || nextToFarm {
 			buildables = append(buildables, unitMine)
+			buildables = append(buildables, unitRoad)
+		} else if nextToRoad {
+			buildables = append(buildables, unitRoad)
 		}
 	}
 
@@ -182,18 +196,59 @@ func (p *Plot) BuildMenu(world *World, owner int64, onSelection func(int)) {
 }
 
 
-func (p *Plot) DeductResources(world *World, amount float32, playerId int64) bool {
-	neighbors := p.Neighbors(world)
+func (p *Plot) AvailableResources(world *World, playerId int64, tag int16) float32 {
 	available := float32(0.0)
 
+	if p.Tag != tag && p.Unit.OwnerID == playerId {
+		p.Tag = tag
+		available += p.Unit.Resources.Current
+	}
+
+	neighbors := p.Neighbors(world)
 	for i := 0; i < len(neighbors); i += 1 {
 		neighbor := neighbors[i]
-		if neighbor.Unit.OwnerID == playerId {
-			available += neighbor.Unit.Resources.Current
+		if neighbor.Tag != tag && neighbor.Unit.OwnerID == playerId {
+			available += neighbor.AvailableResources(world, playerId, tag)
 		}
 	}
 
+	return available
+}
+
+
+func (p *Plot) DeductResources(world *World, amount float32, playerId int64, tag int16) {
+	if p.Tag != tag && p.Unit.OwnerID == playerId {
+		p.Tag = tag
+
+		if amount > p.Unit.Resources.Current {
+			amount -= p.Unit.Resources.Current
+			p.Unit.Resources.Current = 0
+		} else {
+			p.Unit.Resources.Current -= amount
+			return
+		}
+	}
+
+	neighbors := p.Neighbors(world)
+	for i := 0; i < len(neighbors); i += 1 {
+		neighbor := neighbors[i]
+		if neighbor.Tag != tag && neighbor.Unit.OwnerID == playerId {
+			neighbor.DeductResources(world, amount, playerId, tag)
+		}
+	}
+}
+
+func (p *Plot) SpendResources(world *World, amount float32, playerId int64) bool {
+	available := p.AvailableResources(world, playerId, int16(rand.Int31()))
+
 	if available >= amount {
+		p.DeductResources(world, amount, playerId, int16(rand.Int31()))
+		return true
+	}
+
+	return false
+}
+/*
 		for i := 0; i < len(neighbors); i += 1 {
 			unit := &neighbors[i].Unit
 			if unit.OwnerID == playerId && unit.Resources.Current > 0 {
@@ -206,12 +261,7 @@ func (p *Plot) DeductResources(world *World, amount float32, playerId int64) boo
 				}
 			}
 		}
-
-		return true
-	}
-
-	return false
-}
+*/
 
 
 func (p *Plot) Tick(tick int) {
