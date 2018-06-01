@@ -173,12 +173,44 @@ func (p *Plot) BuildMenu(world *World, owner int64, onSelection func(int)) {
 
 	for i := 0; i < len(buildables); i += 1 {
 		ui := buildables[i]
-		optSlice = append(optSlice, Units[ui].Name)
+		optSlice = append(optSlice, fmt.Sprintf("%s ($%0.2f)", Units[ui].Name, Units[ui].Resources.Cost))
 	}
 
 	GfxMenu("These units can be built here", optSlice, func(selection int) {
 		onSelection(buildables[selection])
 	})
+}
+
+
+func (p *Plot) DeductResources(world *World, amount float32, playerId int64) bool {
+	neighbors := p.Neighbors(world)
+	available := float32(0.0)
+
+	for i := 0; i < len(neighbors); i += 1 {
+		neighbor := neighbors[i]
+		if neighbor.Unit.OwnerID == playerId {
+			available += neighbor.Unit.Resources.Current
+		}
+	}
+
+	if available >= amount {
+		for i := 0; i < len(neighbors); i += 1 {
+			unit := &neighbors[i].Unit
+			if unit.OwnerID == playerId && unit.Resources.Current > 0 {
+				if amount > unit.Resources.Current {
+					amount -= unit.Resources.Current
+					unit.Resources.Current = 0
+				} else {
+					unit.Resources.Current -= amount
+					break
+				}
+			}
+		}
+
+		return true
+	}
+
+	return false
 }
 
 

@@ -78,6 +78,11 @@ func GameClient() {
 					// fmt.Println(player.Name + " joined the game")
 				}
 				break
+			case PayTypText:
+				text := TextPayload{}
+				text.Read(dec)
+				GfxMsg(text.Msg)
+				break
 			}
 
 			termbox.Interrupt()

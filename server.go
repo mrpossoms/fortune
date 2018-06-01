@@ -133,10 +133,16 @@ func GameServer(ln net.Listener) {
 
 					fmt.Printf("Got plot (%d,%d)\n", x, y)
 					if isBuildableUnit {
-
-						GameWorld.Plots[x][y].SpawnUnit(updatedPlot.Unit.Type, &player)
-
-						_ = GameWorld.Reveal(x, y, 2, player.ID)
+						// Deduct resources from neighboring plots
+						unit := Units[updatedPlot.Unit.Type]
+						cost := unit.Resources.Cost
+						if GameWorld.Plots[x][y].DeductResources(&GameWorld, cost, player.ID) {
+							GameWorld.Plots[x][y].SpawnUnit(unit.Type, &player)
+							_ = GameWorld.Reveal(x, y, 2, player.ID)
+						} else {
+							Msg{ Type: PayTypText, Count: 1 }.Write(pconn.Enc)
+							TextPayload{ Msg: fmt.Sprintf("Not enough resources to build a %s", unit.Name) }.Write(pconn.Enc)
+						}
 						// fmt.Printf("(%d, %d) -> (%d, %d)\n", min_x, min_y, max_x, max_y)
 
 						// Send newly explored part of the map

@@ -8,11 +8,11 @@ import (
 )
 
 const (
-	PayTypText    int8 = 0
 	PayTypJoin    int8 = 1
 	PayTypPlayer  int8 = 2
 	PayTypPlot    int8 = 3
 	PayTypChat    int8 = 4
+	PayTypText    int8 = 5
 )
 
 type Msg struct {
@@ -30,6 +30,20 @@ type PlayerConnection struct {
 
 	Enc *gob.Encoder
 	Dec *gob.Decoder
+}
+
+
+type TextPayload struct {
+	Msg string
+}
+
+
+func (m TextPayload) Write(enc *gob.Encoder) error {
+	return enc.Encode(m)
+}
+
+func (m *TextPayload) Read(dec *gob.Decoder) error {
+	return dec.Decode(m)
 }
 
 
