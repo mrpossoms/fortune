@@ -16,8 +16,8 @@ const (
 )
 
 const (
-	WorldWidth = 200
-	WorldHeight = 200
+	WorldWidth = 100
+	WorldHeight = 50
 	ViewWidth = 80
 	ViewHeight = 32
 )
@@ -64,8 +64,8 @@ func (p *Plot) Neighbors(world *World) []*Plot {
 		for j := -1; j <= 1; j += 1 {
 			r, c := p.X + i, p.Y + j
 			if i | j == 0 { continue }
-			if r < 0 || r > WorldHeight { continue }
-			if c < 0 || c > WorldWidth { continue }
+			if r < 0 || r > WorldWidth { continue }
+			if c < 0 || c > WorldHeight { continue }
 			n := &world.Plots[r][c]
 			// GfxMsg(fmt.Sprintf("(%d, %d) -> (%d, %d) unit -> %d", r, c, n.X, n.Y, n.Unit.Type))
 
@@ -91,14 +91,21 @@ func (p *Plot) HasNeighbor(world *World, neighbors []*Plot, unitType int, owner 
 
 
 func (p *Plot) PossibleBuilds(world *World, owner int64) []int {
+	unitCity := UnitIndex("city")
+	unitVillage := UnitIndex("village")
+	unitFarm := UnitIndex("farm")
+	unitMine := UnitIndex("mine")
+
 	neighbors := p.Neighbors(world)
-	nextToVillage := p.HasNeighbor(world, neighbors, UnitVillage, owner)
-	nextToCity := p.HasNeighbor(world, neighbors, UnitCity, owner)
-	nextToFarm := p.HasNeighbor(world, neighbors, UnitFarm, owner)
+	nextToVillage := p.HasNeighbor(world, neighbors, unitVillage, owner)
+	nextToCity := p.HasNeighbor(world, neighbors, unitCity, owner)
+	nextToFarm := p.HasNeighbor(world, neighbors, unitFarm, owner)
 
 	buildables := make([]int, 0, 10)
 
-	if p.Unit.Type != UnitNone {
+	// TODO: figure out why this causes problems on the
+	// client, but not the server
+	if p.Unit.Type != UnitIndex("vacant") {
 		return buildables
 	}
 
@@ -107,26 +114,26 @@ func (p *Plot) PossibleBuilds(world *World, owner int64) []int {
 		break
 	case  p.Elevation < PlotBeach:
 		if nextToVillage || nextToCity {
-			buildables = append(buildables, UnitCity)
-			buildables = append(buildables, UnitVillage)
+			buildables = append(buildables, unitCity)
+			buildables = append(buildables, unitVillage)
 		}
 		break
 	case p.Elevation < PlotPlains:
 		if nextToVillage || nextToCity || nextToFarm {
-			buildables = append(buildables, UnitCity)
-			buildables = append(buildables, UnitVillage)
-			buildables = append(buildables, UnitFarm)
+			buildables = append(buildables, unitCity)
+			buildables = append(buildables, unitVillage)
+			buildables = append(buildables, unitFarm)
 		}
 		break
 	case  p.Elevation < PlotForest:
 		if nextToVillage || nextToCity || nextToFarm {
-			buildables = append(buildables, UnitCity)
-			buildables = append(buildables, UnitVillage)
-			buildables = append(buildables, UnitFarm)
+			buildables = append(buildables, unitCity)
+			buildables = append(buildables, unitVillage)
+			buildables = append(buildables, unitFarm)
 		}
 	case p.Elevation < PlotMountain:
 		if nextToVillage || nextToCity || nextToFarm {
-			buildables = append(buildables, UnitMine)
+			buildables = append(buildables, unitMine)
 		}
 	}
 
@@ -137,7 +144,7 @@ func (p *Plot) PossibleBuilds(world *World, owner int64) []int {
 func (p *Plot) Description(descType int) string {
 	desc := fmt.Sprintf("%v (%d,%d)", p.TerrainName(), p.X, p.Y)
 
-	if p.Unit.Type != UnitNone {
+	if p.Unit.Type != UnitIndex("vacant") {
 		return p.Unit.Description(descType) + " in the " + desc
 	}
 
@@ -146,13 +153,16 @@ func (p *Plot) Description(descType int) string {
 
 
 func (p *Plot) SpawnUnit(unitType int, owner *Player) (*PlotUnit, string) {
-	if p.Unit.Type != UnitNone {
+	if p.Unit.Type != UnitIndex("vacant") {
 		return nil, "Couldn't spawn " + Units[unitType].Name + " in occupied plot!"
 	}
 	p.Unit = Units[unitType]
 	p.Unit.OwnerID = owner.ID
+	msg := fmt.Sprintf("(%d,%d) %v spawned for %v", p.X, p.Y, p.Unit.Name, owner.Name)
 
-	return &p.Unit, fmt.Sprintf("%v spawned!", Units[unitType].Name)
+	fmt.Println(msg)
+
+	return &p.Unit, msg
 }
 
 
@@ -279,11 +289,13 @@ func (w *World) Init(seed int64) {
 
 	// populate with initial noise
 	width, height := len(w.Plots), len(w.Plots[0])
+	unitNone := UnitIndex("vacant")
+
 	for x := 0; x < width; x += 1 {
 		for y := 0; y < height; y += 1 {
 			plot := &w.Plots[x][y]
 
-			plot.Unit = Units[UnitNone]
+			plot.Unit = Units[unitNone]
 			plot.X, plot.Y = x, y
 			plot.Explored = 0
 			plot.Unit.OwnerID = 0

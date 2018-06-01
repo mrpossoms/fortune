@@ -37,6 +37,8 @@ func GameClient() {
 	go func(){
 		msg := Msg{}
 		for {
+			// TODO: figue out why this is getting out of sync and
+			// not reading headers when building near a tick
 			if err:= msg.Read(dec); err != nil {
 				panic(err)
 			}

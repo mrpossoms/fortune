@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/gob"
+	"sync"
 	"net"
 	"fmt"
 )
@@ -25,6 +26,7 @@ type PlayerConnection struct {
 	Conn net.Conn
 	Index int
 	ID int64
+	Lock sync.Mutex
 
 	Enc *gob.Encoder
 	Dec *gob.Decoder

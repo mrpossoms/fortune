@@ -68,7 +68,11 @@ func gfxShowMsgs() {
 	gfxStringAt(w, h, m)
 
 	termbox.Flush()
-	termbox.PollEvent()
+
+	evt := termbox.PollEvent()
+	if evt.Type == termbox.EventInterrupt {
+		return
+	}
 
 	MsgQueue = MsgQueue[1:len(MsgQueue)]
 }
@@ -85,8 +89,13 @@ func gfxShowMenus() {
 	}
 
 	termbox.Flush()
-	i := int(termbox.PollEvent().Ch - '0') - 1
 
+	evt := termbox.PollEvent()
+	if evt.Type == termbox.EventInterrupt {
+		return
+	}
+
+	i := int(evt.Ch - '0') - 1
 	if i >= 0 && i < len(menu.options) {
 		menu.callback(i)
 	}
@@ -141,6 +150,7 @@ func GfxMenu(title string, options []string, on_selection func(int)) {
 
 
 func (w *World) GfxDraw(player *Player) {
+	unitNone := UnitIndex("vacant")
 	tw, _ := termbox.Size()
 	thw := tw >> 1
 	width, height := ViewWidth, ViewHeight
@@ -155,7 +165,7 @@ func (w *World) GfxDraw(player *Player) {
 			symbol := rune('?')
 
 			if plot.Explored & player.ID > 0 {
-				if plot.Unit.Type != UnitNone {
+				if plot.Unit.Type != unitNone {
 					// Man made
 					player := Players[plot.Unit.OwnerID]
 					bg = player.Colors.Bg
@@ -208,8 +218,9 @@ func (w *World) GfxDraw(player *Player) {
 	selPlot := player.SelectedPlot(w)
 	if selPlot.Explored & player.ID > 0 {
 		gfxStringCenteredAt(1, selPlot.Description(UnitDescriptionShort))
+		// gfxStringCenteredAt(3, fmt.Sprintf("unit:%d owner:%d", selPlot.Unit.Type, selPlot.Unit.OwnerID))
 
-		if selPlot.Unit.Type != UnitNone {
+		if selPlot.Unit.Type != unitNone {
 			resources := selPlot.Unit.Resources
 			gfxStringCenteredAt(2, fmt.Sprintf("$: %0.2f | %0.2f $/sec", resources.Current, resources.Rate))
 		}
