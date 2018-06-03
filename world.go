@@ -25,6 +25,7 @@ const (
 type Plot struct {
 	Explored int64
 	Elevation float32
+	Productivity float32
 	Unit PlotUnit
 	Tile PlotTile
 	X, Y int
@@ -64,8 +65,8 @@ func (p *Plot) Neighbors(world *World) []*Plot {
 		for j := -1; j <= 1; j += 1 {
 			r, c := p.X + i, p.Y + j
 			if i | j == 0 { continue }
-			if r < 0 || r > WorldWidth { continue }
-			if c < 0 || c > WorldHeight { continue }
+			if r < 0 || r >= WorldWidth { continue }
+			if c < 0 || c >= WorldHeight { continue }
 			n := &world.Plots[r][c]
 			// GfxMsg(fmt.Sprintf("(%d, %d) -> (%d, %d) unit -> %d", r, c, n.X, n.Y, n.Unit.Type))
 
@@ -121,6 +122,7 @@ func (p *Plot) PossibleBuilds(world *World, owner int64) []int {
 			buildables = append(buildables, unitRoad)
 		} else if nextToRoad {
 			buildables = append(buildables, unitRoad)
+			buildables = append(buildables, unitVillage)
 		}
 		break
 	case p.Elevation < PlotPlains:
@@ -131,6 +133,7 @@ func (p *Plot) PossibleBuilds(world *World, owner int64) []int {
 			buildables = append(buildables, unitRoad)
 		} else if nextToRoad {
 			buildables = append(buildables, unitRoad)
+			buildables = append(buildables, unitVillage)
 		}
 		break
 	case  p.Elevation < PlotForest:
@@ -141,6 +144,7 @@ func (p *Plot) PossibleBuilds(world *World, owner int64) []int {
 			buildables = append(buildables, unitRoad)
 		} else if nextToRoad {
 			buildables = append(buildables, unitRoad)
+			buildables = append(buildables, unitVillage)
 		}
 	case p.Elevation < PlotMountain:
 		if nextToVillage || nextToCity || nextToFarm {
@@ -148,6 +152,7 @@ func (p *Plot) PossibleBuilds(world *World, owner int64) []int {
 			buildables = append(buildables, unitRoad)
 		} else if nextToRoad {
 			buildables = append(buildables, unitRoad)
+			buildables = append(buildables, unitVillage)
 		}
 	}
 
@@ -156,7 +161,7 @@ func (p *Plot) PossibleBuilds(world *World, owner int64) []int {
 
 
 func (p *Plot) Description(descType int) string {
-	desc := fmt.Sprintf("%v (%d,%d)", p.TerrainName(), p.X, p.Y)
+	desc := fmt.Sprintf("%v x%0.2f (%d,%d)", p.TerrainName(), p.Productivity, p.X, p.Y)
 
 	if p.Unit.Type != UnitIndex("vacant") {
 		return p.Unit.Description(descType) + " in the " + desc
@@ -265,7 +270,7 @@ func (p *Plot) SpendResources(world *World, amount float32, playerId int64) bool
 
 
 func (p *Plot) Tick(tick int) {
-	p.Unit.Resources.Current += p.Unit.Resources.Rate
+	p.Unit.Resources.Current += p.Unit.Resources.Rate * p.Productivity
 	p.Updated = tick
 }
 
@@ -273,11 +278,15 @@ func (p *Plot) Tick(tick int) {
 func (p *Plot) ProductionRate() float32 {
 	switch {
 	case p.Elevation <= PlotSea:
-		return 1
+		return float32(1.25 / 9.0)
 	case p.Elevation <= PlotBeach:
-		return 0.1
+		return float32(0.5 / 9.0)
+	case p.Elevation <= PlotPlains:
+		return float32(1.0 / 9.0)
 	case p.Elevation <= PlotForest:
-		return 2
+		return float32(1.25 / 9.0)
+	case p.Elevation <= PlotMountain:
+		return float32(0.75 / 9.0)
 	}
 
 	return 0;
@@ -401,6 +410,18 @@ func (w *World) Init(seed int64) {
 				plot := &w.Plots[x][y]
 				plot.Elevation = w.avgPatchElevation(x, y)
 				// fmt.Println(patch)
+			}
+		}
+	}
+
+	for x := 0; x < width; x += 1 {
+		for y := 0; y < height; y += 1 {
+			plot := &w.Plots[x][y]
+			neighbors := plot.Neighbors(w)
+
+			plot.Productivity = plot.ProductionRate()
+			for i := 0; i < len(neighbors); i += 1 {
+				plot.Productivity += neighbors[i].ProductionRate();
 			}
 		}
 	}
