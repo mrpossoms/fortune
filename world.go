@@ -16,6 +16,17 @@ const (
 )
 
 const (
+	IdxSea      = 0
+	IdxBeach    = 1
+	IdxPlains   = 2
+	IdxForrest  = 3
+	IdxMountain = 4
+)
+
+var PlotTypes = [...]float32{ PlotSea, PlotBeach, PlotPlains, PlotForest, PlotMountain }
+var PlotTypeNames = [...]string{ "sea", "beach", "plains", "forrest", "mountains" }
+
+const (
 	WorldWidth = 100
 	WorldHeight = 50
 	ViewWidth = 80
@@ -40,21 +51,24 @@ type World struct {
 }
 
 
-func (p *Plot) TerrainName() string {
-	switch {
-	case p.Elevation < PlotSea:
-		return "sea"
-	case  p.Elevation < PlotBeach:
-		return "beach"
-	case p.Elevation < PlotPlains:
-		return "plains"
-	case  p.Elevation < PlotForest:
-		return "forest"
-	case p.Elevation < PlotMountain:
-		return "mountains"
+func TerrainIndexForElevation(elevation float32) int {
+	for i := 0; i < len(PlotTypes); i += 1 {
+		if elevation <= PlotTypes[i] {
+			return i
+		}
 	}
 
-	return ""
+	return -1
+}
+
+
+func (p *Plot) TerrainIndex() int {
+	return TerrainIndexForElevation(p.Elevation)
+}
+
+
+func (p *Plot) TerrainName() string {
+	return PlotTypeNames[p.TerrainIndex()]
 }
 
 
@@ -91,6 +105,18 @@ func (p *Plot) HasNeighbor(world *World, neighbors []*Plot, unitType int, owner 
 }
 
 
+func (p *Plot) HasNeighboringPlotType(world *World, neighbors []*Plot, plotTypeIndex int) bool {
+	for ni := 0; ni < len(neighbors); ni += 1 {
+		neighbor := neighbors[ni]
+		if neighbor.TerrainIndex() == plotTypeIndex {
+			return true
+		}
+	}
+
+	return false
+}
+
+
 func (p *Plot) PossibleBuilds(world *World, owner int64) []int {
 	unitCity := UnitIndex("city")
 	unitVillage := UnitIndex("village")
@@ -104,7 +130,11 @@ func (p *Plot) PossibleBuilds(world *World, owner int64) []int {
 	nextToFarm := p.HasNeighbor(world, neighbors, unitFarm, owner)
 	nextToRoad := p.HasNeighbor(world, neighbors, unitRoad, owner)
 
+	nextToWater := p.HasNeighboringPlotType(world, neighbors, IdxSea)
+
 	buildables := make([]int, 0, 10)
+
+	nextToCivilization := nextToRoad || nextToCity || nextToVillage || nextToFarm
 
 	// TODO: figure out why this causes problems on the
 	// client, but not the server
@@ -112,47 +142,22 @@ func (p *Plot) PossibleBuilds(world *World, owner int64) []int {
 		return buildables
 	}
 
-	switch {
-	case p.Elevation < PlotSea:
-		break
-	case  p.Elevation < PlotBeach:
-		if nextToVillage || nextToCity {
+	if nextToWater && p.TerrainIndex() != IdxSea {
+		if nextToCity || nextToVillage || nextToRoad {
 			buildables = append(buildables, unitCity)
-			buildables = append(buildables, unitVillage)
-			buildables = append(buildables, unitRoad)
-		} else if nextToRoad {
-			buildables = append(buildables, unitRoad)
 			buildables = append(buildables, unitVillage)
 		}
-		break
-	case p.Elevation < PlotPlains:
-		if nextToVillage || nextToCity || nextToFarm {
-			buildables = append(buildables, unitCity)
-			buildables = append(buildables, unitVillage)
+
+		if nextToCivilization && p.TerrainIndex() == IdxPlains {
 			buildables = append(buildables, unitFarm)
-			buildables = append(buildables, unitRoad)
-		} else if nextToRoad {
-			buildables = append(buildables, unitRoad)
-			buildables = append(buildables, unitVillage)
 		}
-		break
-	case  p.Elevation < PlotForest:
-		if nextToVillage || nextToCity || nextToFarm {
-			buildables = append(buildables, unitCity)
-			buildables = append(buildables, unitVillage)
-			buildables = append(buildables, unitFarm)
-			buildables = append(buildables, unitRoad)
-		} else if nextToRoad {
-			buildables = append(buildables, unitRoad)
-			buildables = append(buildables, unitVillage)
-		}
-	case p.Elevation < PlotMountain:
-		if nextToVillage || nextToCity || nextToFarm {
+	}
+
+	if nextToCivilization {
+		buildables = append(buildables, unitRoad)
+
+		if p.TerrainIndex() == TerrainIndexForElevation(PlotMountain) {
 			buildables = append(buildables, unitMine)
-			buildables = append(buildables, unitRoad)
-		} else if nextToRoad {
-			buildables = append(buildables, unitRoad)
-			buildables = append(buildables, unitVillage)
 		}
 	}
 
@@ -270,7 +275,17 @@ func (p *Plot) SpendResources(world *World, amount float32, playerId int64) bool
 
 
 func (p *Plot) Tick(tick int) {
-	p.Unit.Resources.Current += p.Unit.Resources.Rate * p.Productivity
+	unitNone := UnitIndex("vacant")
+	if p.Unit.Type != unitNone {
+		p.Unit.Resources.Current += p.Unit.Resources.Rate * p.Productivity
+
+		if p.Unit.Resources.Current < 0 {
+			p.Unit.Type = unitNone
+		}
+	} else {
+		p.Unit.Resources.Current = 0
+	}
+
 	p.Updated = tick
 }
 
@@ -280,7 +295,7 @@ func (p *Plot) ProductionRate() float32 {
 	case p.Elevation <= PlotSea:
 		return float32(1.25 / 9.0)
 	case p.Elevation <= PlotBeach:
-		return float32(0.5 / 9.0)
+		return float32(0.0 / 9.0)
 	case p.Elevation <= PlotPlains:
 		return float32(1.0 / 9.0)
 	case p.Elevation <= PlotForest:

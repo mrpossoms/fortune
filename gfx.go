@@ -222,7 +222,7 @@ func (w *World) GfxDraw(player *Player) {
 
 		if selPlot.Unit.Type != unitNone {
 			resources := selPlot.Unit.Resources
-			gfxStringCenteredAt(2, fmt.Sprintf("$: %0.2f | %0.2f $/sec", resources.Current, resources.Rate))
+			gfxStringCenteredAt(2, fmt.Sprintf("$: %0.2f | %0.2f $/sec", resources.Current, resources.Rate * selPlot.Productivity))
 		}
 	}
 }
