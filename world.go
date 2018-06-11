@@ -258,20 +258,6 @@ func (p *Plot) SpendResources(world *World, amount float32, playerId int64) bool
 
 	return false
 }
-/*
-		for i := 0; i < len(neighbors); i += 1 {
-			unit := &neighbors[i].Unit
-			if unit.OwnerID == playerId && unit.Resources.Current > 0 {
-				if amount > unit.Resources.Current {
-					amount -= unit.Resources.Current
-					unit.Resources.Current = 0
-				} else {
-					unit.Resources.Current -= amount
-					break
-				}
-			}
-		}
-*/
 
 
 func (p *Plot) Tick(tick int) {
@@ -288,6 +274,14 @@ func (p *Plot) Tick(tick int) {
 
 	p.Updated = tick
 }
+
+
+func (p *Plot) PlayerResources(playerId int64) (current, rate float32) {
+	if p.Unit.OwnerID != playerId { return 0, 0 }
+
+	return p.Unit.Resources.Current, p.Unit.Resources.Rate * p.Productivity
+}
+
 
 
 func (p *Plot) ProductionRate() float32 {
@@ -385,6 +379,21 @@ func (w *World) Tick(tick int) {
 			w.Plots[x][y].Tick(tick)
 		}
 	}
+}
+
+
+func (w *World) PlayerResources(playerId int64) (current, rate float32) {
+
+	width, height := len(w.Plots), len(w.Plots[0])
+	for x := 0; x < width; x += 1 {
+		for y := 0; y < height; y += 1 {
+			c, r := w.Plots[x][y].PlayerResources(playerId)
+			current += c
+			rate += r
+		}
+	}
+
+	return
 }
 
 

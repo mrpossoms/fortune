@@ -37,14 +37,21 @@ func GameServer(ln net.Listener) {
 
 			for pi := 0; pi < len(players); pi += 1 {
 				pconn := PlayerConns[pi]
-				changed := GameWorld.ChangedPlots(plots[0:0], gameTime, pconn.ID)
 
+				changed := GameWorld.ChangedPlots(plots[0:0], gameTime, pconn.ID)
 				pconn.Lock.Lock()
 				Msg{ Type: PayTypPlot, Count: int32(len(changed)) }.Write(pconn.Enc)
 
 				for ci := 0; ci < len(changed); ci += 1 {
 					changed[ci].Write(pconn.Enc)
 				}
+
+				player := &players[pi]
+
+				Msg{ Type: PayTypPlayer, Count: int32(1) }.Write(pconn.Enc)
+				player.Wealth, player.Income = GameWorld.PlayerResources(player.ID)
+				player.Write(pconn.Enc)
+				
 				pconn.Lock.Unlock()
 			}
 

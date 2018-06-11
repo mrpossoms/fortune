@@ -215,6 +215,8 @@ func (w *World) GfxDraw(player *Player) {
 		}
 	}
 
+	gfxStringCenteredAt(0, fmt.Sprintf("Cumulative $: %0.2f | %0.2f $/sec", player.Wealth, player.Income))
+
 	selPlot := player.SelectedPlot(w)
 	if selPlot.Explored & player.ID > 0 {
 		gfxStringCenteredAt(1, selPlot.Description(UnitDescriptionShort))

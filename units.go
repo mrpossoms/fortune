@@ -43,10 +43,10 @@ type PlotTile struct { Icon }
 var Units = []PlotUnit{
 	PlotUnit{Icon{rune(' '), 0}, 0, ResourcesProps{Current:0, Rate:0}, 0, "vacant"},
 	PlotUnit{Icon{rune('≈'), 0}, 0, ResourcesProps{Current:0, Rate:2, Cost:30}, 0, "farm"},
-	PlotUnit{Icon{rune('M'), 0}, 0, ResourcesProps{Current:0, Rate:3, Cost:40}, 0, "mine"},
+	PlotUnit{Icon{rune('M'), 0}, 0, ResourcesProps{Current:0, Rate:3, Cost:400}, 0, "mine"},
 	PlotUnit{Icon{rune('^'), termbox.AttrUnderline}, 0, ResourcesProps{Current:0, Rate:1}, 0, "forest"},
-	PlotUnit{Icon{rune('Ü'), 0}, 0, ResourcesProps{Current:0, Rate:10, Cost: 300}, 0, "city"},
-	PlotUnit{Icon{rune('∆'), termbox.AttrUnderline}, 0, ResourcesProps{Current:0, Rate:1, Cost: 30}, 0, "village"},
+	PlotUnit{Icon{rune('Ü'), 0}, 0, ResourcesProps{Current:0, Rate:10, Cost: 3000}, 0, "city"},
+	PlotUnit{Icon{rune('∆'), termbox.AttrUnderline}, 0, ResourcesProps{Current:0, Rate:1, Cost: 300}, 0, "village"},
 	PlotUnit{Icon{rune('*'), 0}, 0, ResourcesProps{Current:0, Rate:-1}, 0, "explorers"},
 	PlotUnit{Icon{rune('*'), 0}, 0, ResourcesProps{Current:0, Rate:0}, 0, "travelers"},
 	PlotUnit{Icon{rune('*'), termbox.AttrBold}, 0, ResourcesProps{Current:0, Rate:5}, 0, "merchants"},

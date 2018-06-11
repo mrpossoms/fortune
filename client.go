@@ -21,7 +21,7 @@ func GameClient() {
 
 	ctx := context.TODO()
 	joinSem := semaphore.NewWeighted(2)
-	var player Player;
+	var player *Player;
 	gotMap := false
 	conn, err := net.Dial("tcp", os.Args[1] + ":31337")
 	if err != nil {
@@ -45,12 +45,15 @@ func GameClient() {
 
 			switch (msg.Type) {
 			case PayTypJoin:
-				player.Read(dec)
+				p := Player{}
+				p.Read(dec)
+
+				*PlayerFromID(p.ID) = p
+				player = PlayerFromID(p.ID)
 
 				GfxInit()
 				GfxDrawBegin()
 				player.Name = GfxPrompt("Type your name")
-
 
 				msg.Write(enc)
 				player.Write(enc)
@@ -70,11 +73,24 @@ func GameClient() {
 
 				break
 			case PayTypPlayer:
-				player := Player{}
+				p := Player{}
 				for i := 0; i < int(msg.Count); i += 1 {
-					player.Read(dec)
-					*PlayerFromID(player.ID) = player
-					GfxMsg(fmt.Sprintf("%v joined the game", player.Name))
+					p.Read(dec)
+
+					localPlayer := PlayerFromID(p.ID)
+
+					if localPlayer.Name != p.Name {
+						GfxMsg(fmt.Sprintf("%v joined the game", p.Name))
+					}
+
+					if p.ID == localPlayer.ID {
+						localPlayer.Wealth = p.Wealth
+						localPlayer.Income = p.Income
+					} else {
+						*PlayerFromID(p.ID) = p
+					}
+
+
 					// fmt.Println(player.Name + " joined the game")
 				}
 				break
@@ -101,7 +117,7 @@ func GameClient() {
 	for running {
 		GfxDrawBegin()
 
-		GameWorld.GfxDraw(&player)
+		GameWorld.GfxDraw(player)
 
 		evt := GfxDrawFinish(true)
 

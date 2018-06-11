@@ -26,6 +26,8 @@ type PlayerColors struct {
 type Player struct {
 	Score int32
 	ID int64
+	Income float32
+	Wealth float32
 	Colors PlayerColors
 	Cursor Box
 	Cam Camera
