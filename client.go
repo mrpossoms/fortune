@@ -59,6 +59,13 @@ func GameClient() {
 				player.Write(enc)
 				joinSem.Release(1)
 				break
+			case PayTypInfo:
+				info := GameInfo{}
+				info.Read(dec)
+				GameWorld.Width = info.Width
+				GameWorld.Height = info.Height
+				fmt.Printf("got info %dx%d\n", info.Width, info.Height)
+				break
 			case PayTypPlot:
 				for i := 0; i < int(msg.Count); i += 1 {
 					plot := Plot{}
@@ -101,7 +108,10 @@ func GameClient() {
 				break
 			}
 
-			termbox.Interrupt()
+			if player != nil {
+				termbox.Interrupt()
+			}
+
 			msg.Type = -1
 
 		}

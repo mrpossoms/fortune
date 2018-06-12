@@ -27,8 +27,8 @@ var PlotTypes = [...]float32{ PlotSea, PlotBeach, PlotPlains, PlotForest, PlotMo
 var PlotTypeNames = [...]string{ "sea", "beach", "plains", "forrest", "mountains" }
 
 const (
-	WorldWidth = 100
-	WorldHeight = 50
+	MaxWorldWidth = 100
+	MaxWorldHeight = 50
 	ViewWidth = 80
 	ViewHeight = 32
 )
@@ -37,6 +37,7 @@ type Plot struct {
 	Explored int64
 	Elevation float32
 	Productivity float32
+	OwnerID int64
 	Unit PlotUnit
 	Tile PlotTile
 	X, Y int
@@ -45,7 +46,8 @@ type Plot struct {
 }
 
 type World struct {
-	Plots [WorldWidth][WorldHeight]Plot
+	Width, Height int
+	Plots [MaxWorldWidth][MaxWorldHeight]Plot
 	Smoothness int
 	R *rand.Rand
 }
@@ -79,8 +81,8 @@ func (p *Plot) Neighbors(world *World) []*Plot {
 		for j := -1; j <= 1; j += 1 {
 			r, c := p.X + i, p.Y + j
 			if i | j == 0 { continue }
-			if r < 0 || r >= WorldWidth { continue }
-			if c < 0 || c >= WorldHeight { continue }
+			if r < 0 || r >= MaxWorldWidth { continue }
+			if c < 0 || c >= MaxWorldHeight { continue }
 			n := &world.Plots[r][c]
 			// GfxMsg(fmt.Sprintf("(%d, %d) -> (%d, %d) unit -> %d", r, c, n.X, n.Y, n.Unit.Type))
 
@@ -123,6 +125,7 @@ func (p *Plot) PossibleBuilds(world *World, owner int64) []int {
 	unitFarm := UnitIndex("farm")
 	unitRoad := UnitIndex("road")
 	unitMine := UnitIndex("mine")
+	unitCanal := UnitIndex("canal")
 
 	neighbors := p.Neighbors(world)
 	nextToVillage := p.HasNeighbor(world, neighbors, unitVillage, owner)
@@ -146,6 +149,7 @@ func (p *Plot) PossibleBuilds(world *World, owner int64) []int {
 		if nextToCity || nextToVillage || nextToRoad {
 			buildables = append(buildables, unitCity)
 			buildables = append(buildables, unitVillage)
+			buildables = append(buildables, unitCanal)
 		}
 
 		if nextToCivilization && p.TerrainIndex() == IdxPlains {
@@ -324,7 +328,7 @@ func (w *World) ChangedPlots(plots []*Plot, tick int, playerMsk int64) []*Plot {
 
 func (w *World) FindLivablePlot() *Plot {
 	for {
-		x, y := w.R.Intn(WorldWidth), w.R.Intn(WorldHeight)
+		x, y := w.R.Intn(MaxWorldWidth), w.R.Intn(MaxWorldHeight)
 		plot := &w.Plots[x][y]
 		if plot.IsLivable() {
 			return plot
@@ -357,7 +361,12 @@ func (w *World) Reveal(x, y, r int, playerId int64) Region {
 			// dist := math.Sqrt(math.Pow(float64(x-i) / 2, 2) + math.Pow(float64(y-j), 2))
 			dist := dx * dx + dy * dy
 			if dist <= (r * r) {
-				w.Plots[i][j].Explored |= playerId
+				plot := &w.Plots[i][j]
+				if plot.OwnerID == 0 {
+					plot.OwnerID = playerId
+				}
+
+				plot.Explored |= playerId
 			}
 
 			// w.Plots[i][j].Explored = 0
@@ -403,7 +412,7 @@ func (w *World) Init(seed int64) {
 	}
 
 	// populate with initial noise
-	width, height := len(w.Plots), len(w.Plots[0])
+	width, height := w.Width, w.Height
 	unitNone := UnitIndex("vacant")
 
 	for x := 0; x < width; x += 1 {

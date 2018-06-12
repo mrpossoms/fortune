@@ -1,6 +1,8 @@
 package main
 
 import (
+	"os"
+	"strconv"
 	"time"
 	"net"
 	"fmt"
@@ -13,7 +15,15 @@ func GameServer(ln net.Listener) {
 
 	players := playerPool[0:0]
 
+	size, err := strconv.Atoi(os.Args[2])
+
+	if err != nil {
+		panic("Please enter a mapsize. Ex. 'fortune host 64'")
+	}
+
 	GameWorld = World {
+		Width: size,
+		Height: size,
 		Smoothness: 2,
 	}
 
@@ -33,7 +43,7 @@ func GameServer(ln net.Listener) {
 			<-updateTicker.C
 			GameWorld.Tick(gameTime)
 
-			var plots [WorldWidth * WorldHeight]*Plot
+			var plots [MaxWorldWidth * MaxWorldHeight]*Plot
 
 			for pi := 0; pi < len(players); pi += 1 {
 				pconn := PlayerConns[pi]
@@ -51,7 +61,7 @@ func GameServer(ln net.Listener) {
 				Msg{ Type: PayTypPlayer, Count: int32(1) }.Write(pconn.Enc)
 				player.Wealth, player.Income = GameWorld.PlayerResources(player.ID)
 				player.Write(pconn.Enc)
-				
+
 				pconn.Lock.Unlock()
 			}
 
@@ -69,6 +79,7 @@ func GameServer(ln net.Listener) {
 
 		fmt.Println("Connection incoming")
 		go func() {
+
 			msg := Msg{ Type: PayTypJoin, Count:1 }
 			player := Player{ ID: 1 << uint(len(players))}
 
@@ -81,11 +92,15 @@ func GameServer(ln net.Listener) {
 			}
 			PlayerConns[PlayerIndex(player.ID)] = pconn
 
+			// Send game info to player
+			Msg{ Type: PayTypInfo, Count:1 }.Write(pconn.Enc)
+			GameInfo{ GameWorld.Width, GameWorld.Height }.Write(pconn.Enc)
+
 			// Find a place for them to start
-			start:=GameWorld.FindLivablePlot()
+			start := GameWorld.FindLivablePlot()
 
 			// player view and cam setup
-			player.Cam.X, player.Cam.Y = WorldWidth / 2, WorldHeight / 2
+			player.Cam.X, player.Cam.Y = GameWorld.Width / 2, GameWorld.Height / 2
 			player.Cursor.X, player.Cursor.Y = player.Cam.X, player.Cam.Y
 			player.Cam.View.Width = ViewWidth
 			player.Cam.View.Height = ViewHeight
@@ -94,6 +109,7 @@ func GameServer(ln net.Listener) {
 			// Send the initial empty player object
 			if err := msg.Write(pconn.Enc); err != nil { panic(err) }
 			if err := player.Write(pconn.Enc); err != nil { panic(err) }
+			fmt.Println("Sent Player")
 
 			// Continuous message handling
 			for {
@@ -144,8 +160,12 @@ func GameServer(ln net.Listener) {
 						unit := Units[updatedPlot.Unit.Type]
 						cost := unit.Resources.Cost
 						if GameWorld.Plots[x][y].SpendResources(&GameWorld, cost, player.ID) {
-							GameWorld.Plots[x][y].SpawnUnit(unit.Type, &player)
-							_ = GameWorld.Reveal(x, y, 2, player.ID)
+							if updatedPlot.Unit.Type == UnitIndex("canal") {
+								updatedPlot.Elevation = PlotTypes[IdxSea] - 0.1
+							} else {
+								GameWorld.Plots[x][y].SpawnUnit(unit.Type, &player)
+								_ = GameWorld.Reveal(x, y, 2, player.ID)
+							}
 						} else {
 							Msg{ Type: PayTypText, Count: 1 }.Write(pconn.Enc)
 							TextPayload{ Msg: fmt.Sprintf("Not enough resources to build a %s", unit.Name) }.Write(pconn.Enc)

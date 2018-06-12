@@ -12,11 +12,17 @@ var Players [64]Player
 var PlayerConns [64]PlayerConnection
 
 func main() {
-	ln, err := net.Listen("tcp", ":31337")
-
 	fmt.Println(os.Getpid())
 
-	if err != nil {
+	if os.Args[1] == "host" {
+		ln, err := net.Listen("tcp", ":31337")
+
+		if err != nil {
+			panic(err.Error())
+		}
+
+		GameServer(ln)
+	} else {
 		// Intro()
 
 		GameWorld = World {
@@ -30,7 +36,5 @@ func main() {
 
 		// Can't host, act as a client
 		GameClient()
-	} else {
-		GameServer(ln)
 	}
 }

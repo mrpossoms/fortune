@@ -87,11 +87,11 @@ func (p *Player) SelectedPlot(world *World) *Plot {
 func (c *Box) Move(dx, dy int) {
 	nx, ny := c.X + dx, c.Y + dy
 
-	if nx >= 0 && nx < WorldWidth {
+	if nx >= 0 && nx < GameWorld.Width {
 		c.X = nx
 	}
 
-	if ny >= 0 && ny < WorldHeight {
+	if ny >= 0 && ny < GameWorld.Height {
 		c.Y = ny
 	}
 }
@@ -101,11 +101,11 @@ func (c *Camera) Move(dx, dy int) {
 	hw, hh := c.View.Width >> 1, c.View.Height >> 1
 	nx, ny := c.X + dx, c.Y + dy
 
-	if nx - hw >= 0 && nx + hw < WorldWidth {
+	if nx - hw >= 0 && nx + hw < GameWorld.Width {
 		c.X = nx
 	}
 
-	if ny - hh >= 0 && ny + hh < WorldHeight {
+	if ny - hh >= 0 && ny + hh < GameWorld.Height {
 		c.Y = ny
 	}
 }

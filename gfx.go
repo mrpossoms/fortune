@@ -159,12 +159,16 @@ func (w *World) GfxDraw(player *Player) {
 		for y := 0; y < height; y += 1 {
 			_x := player.Cam.X - hw + x
 			_y := player.Cam.Y - hh + y
-			plot := &w.Plots[_x][_y]
 
 			fg, bg := termbox.ColorWhite, termbox.ColorBlack
 			symbol := rune('?')
+			var plot *Plot
 
-			if plot.Explored & player.ID > 0 {
+			if _x >= 0 && _y >= 0 && _x < GameWorld.Width && _y < GameWorld.Height {
+				plot = &w.Plots[_x][_y]
+			}
+
+			if plot != nil && plot.Explored & player.ID > 0 {
 				if plot.Unit.Type != unitNone {
 					// Man made
 					player := Players[plot.Unit.OwnerID]

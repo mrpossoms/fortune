@@ -13,6 +13,7 @@ const (
 	PayTypPlot    int8 = 3
 	PayTypChat    int8 = 4
 	PayTypText    int8 = 5
+	PayTypInfo    int8 = 6
 )
 
 type Msg struct {
@@ -35,6 +36,20 @@ type PlayerConnection struct {
 
 type TextPayload struct {
 	Msg string
+}
+
+
+type GameInfo struct {
+	Width, Height int
+}
+
+
+func (m GameInfo) Write(enc *gob.Encoder) error {
+	return enc.Encode(m)
+}
+
+func (m *GameInfo) Read(dec *gob.Decoder) error {
+	return dec.Decode(m)
 }
 
 
