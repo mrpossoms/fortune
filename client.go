@@ -93,6 +93,7 @@ func GameClient() {
 					if p.ID == localPlayer.ID {
 						localPlayer.Wealth = p.Wealth
 						localPlayer.Income = p.Income
+						localPlayer.Score = p.Score
 					} else {
 						*PlayerFromID(p.ID) = p
 					}

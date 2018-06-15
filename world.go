@@ -312,8 +312,8 @@ func (p *Plot) IsLivable() bool {
 
 
 func (w *World) ChangedPlots(plots []*Plot, tick int, playerMsk int64) []*Plot {
-	for x := 0; x < len(w.Plots); x += 1 {
-		for y := 0; y < len(w.Plots[x]); y += 1 {
+	for x := 0; x < w.Width; x += 1 {
+		for y := 0; y < w.Height; y += 1 {
 			plot := &w.Plots[x][y]
 
 			if plot.Explored | playerMsk > 0 && plot.Updated == tick {
@@ -323,6 +323,37 @@ func (w *World) ChangedPlots(plots []*Plot, tick int, playerMsk int64) []*Plot {
 	}
 
 	return plots
+}
+
+
+func (w *World) IsGameOver() bool {
+	for x := 0; x < w.Width; x += 1 {
+		for y := 0; y < w.Height; y += 1 {
+			plot := &w.Plots[x][y]
+
+			if plot.Elevation >= PlotSea && plot.OwnerID == 0 {
+				return false
+			}
+		}
+	}
+
+	return true
+}
+
+
+func (w *World) PlayerScore(playerId int64) int {
+	score := 0
+	for x := 0; x < w.Width; x += 1 {
+		for y := 0; y < w.Height; y += 1 {
+			plot := &w.Plots[x][y]
+
+			if plot.OwnerID == playerId {
+				score += 1
+			}
+		}
+	}
+
+	return score
 }
 
 
@@ -352,7 +383,7 @@ func (w *World) avgPatchElevation(cx, cy int) float32 {
 
 
 func (w *World) Reveal(x, y, r int, playerId int64) Region {
-	min_x, max_x := max(x - r * 2, 0), min(x + r * 2, len(w.Plots)-1)
+	min_x, max_x := max(x - r * 2, 0), min(x + r * 2, w.Width-1)
 	min_y, max_y := max(y - r, 0), min(y + r, len(w.Plots[0])-1)
 
 	for i := min_x; i <= max_x; i += 1 {
@@ -382,7 +413,7 @@ func (w *World) Reveal(x, y, r int, playerId int64) Region {
 
 
 func (w *World) Tick(tick int) {
-	width, height := len(w.Plots), len(w.Plots[0])
+	width, height := w.Width, len(w.Plots[0])
 	for x := 0; x < width; x += 1 {
 		for y := 0; y < height; y += 1 {
 			w.Plots[x][y].Tick(tick)
@@ -393,7 +424,7 @@ func (w *World) Tick(tick int) {
 
 func (w *World) PlayerResources(playerId int64) (current, rate float32) {
 
-	width, height := len(w.Plots), len(w.Plots[0])
+	width, height := w.Width, len(w.Plots[0])
 	for x := 0; x < width; x += 1 {
 		for y := 0; y < height; y += 1 {
 			c, r := w.Plots[x][y].PlayerResources(playerId)
@@ -438,8 +469,8 @@ func (w *World) Init(seed int64) {
 	}
 
 	for i := w.Smoothness; i > 0; i -= 1 {
-		for x := 1; x < len(w.Plots) - 1; x += 1 {
-			for y := 1; y < len(w.Plots[x]) - 1; y += 1 {
+		for x := 1; x < w.Width - 1; x += 1 {
+			for y := 1; y < w.Height - 1; y += 1 {
 				plot := &w.Plots[x][y]
 				plot.Elevation = w.avgPatchElevation(x, y)
 				// fmt.Println(patch)

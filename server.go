@@ -60,6 +60,7 @@ func GameServer(ln net.Listener) {
 
 				Msg{ Type: PayTypPlayer, Count: int32(1) }.Write(pconn.Enc)
 				player.Wealth, player.Income = GameWorld.PlayerResources(player.ID)
+				player.Score = int32(GameWorld.PlayerScore(player.ID))
 				player.Write(pconn.Enc)
 
 				pconn.Lock.Unlock()
