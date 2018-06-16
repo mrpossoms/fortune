@@ -45,29 +45,30 @@ func GameServer(ln net.Listener) {
 
 			var plots [MaxWorldWidth * MaxWorldHeight]*Plot
 
-			for pi := 0; pi < len(players); pi += 1 {
-				pconn := PlayerConns[pi]
+			for conni := 0; conni < len(players); conni += 1 {
+				pconn := PlayerConns[conni]
 
 				changed := GameWorld.ChangedPlots(plots[0:0], gameTime, pconn.ID)
 				pconn.Lock.Lock()
 				Msg{ Type: PayTypPlot, Count: int32(len(changed)) }.Write(pconn.Enc)
 
-				for ci := 0; ci < len(changed); ci += 1 {
-					changed[ci].Write(pconn.Enc)
+				for conni := 0; conni < len(changed); conni += 1 {
+					changed[conni].Write(pconn.Enc)
 				}
 
-				player := &players[pi]
-
-				Msg{ Type: PayTypPlayer, Count: int32(1) }.Write(pconn.Enc)
-				player.Wealth, player.Income = GameWorld.PlayerResources(player.ID)
-				player.Score = int32(GameWorld.PlayerScore(player.ID))
-				player.Write(pconn.Enc)
+				// send all player scores to each player
+				Msg{ Type: PayTypPlayer, Count: int32(len(players)) }.Write(pconn.Enc)
+				for pi := 0; pi < len(players); pi += 1 {
+					player := &players[conni]
+					player.Wealth, player.Income = GameWorld.PlayerResources(player.ID)
+					player.Score = int32(GameWorld.PlayerScore(player.ID))
+					player.Write(pconn.Enc)
+				}
 
 				pconn.Lock.Unlock()
 			}
 
 			gameTime += 1
-			fmt.Printf("tick %d\n", gameTime)
 		}
 	}()
 
@@ -122,7 +123,7 @@ func GameServer(ln net.Listener) {
 					players = append(players, player)
 					fmt.Printf("%v (%d) has joined the game\n", players[len(players)-1].Name, players[len(players)-1].ID)
 
-					region := GameWorld.Reveal(start.X, start.Y, 5, player.ID)
+					region := GameWorld.Reveal(start.X, start.Y, 3, player.ID)
 
 					// Spawn their village
 					start.SpawnUnit(UnitIndex("village"), &player)

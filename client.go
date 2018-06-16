@@ -145,6 +145,16 @@ func GameClient() {
 		case termbox.KeyArrowRight:
 			player.MoveCursor(1, 0)
 			break
+		case termbox.KeyTab:
+			_, h := termbox.Size()
+			score_board := ""
+			for i := 0; i < len(Players); i += 1 {
+				if Players[i].ID > 0 {
+					score_board += fmt.Sprintf("%v - score %d\n", Players[i].Name, Players[i].Score)
+				}
+			}
+
+			GfxMsgExplicit(MsgContainer { Str: score_board, Y: h / 2 })
 		}
 
 		x, y := player.Cursor.X, player.Cursor.Y

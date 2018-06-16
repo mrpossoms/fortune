@@ -5,13 +5,18 @@ import (
 	"fmt"
 )
 
+type MsgContainer struct {
+	Str string
+	Y int
+}
+
 type Menu struct {
 	title string
 	options []string
 	callback func(int)
 }
 
-var gfxMsgQueue [10]string
+var gfxMsgQueue [10]MsgContainer
 var gfxMenus [10]Menu
 var gfxCurrentMenu Menu
 var MenuQueue = gfxMenus[0:0]
@@ -37,8 +42,13 @@ func GfxUninit() {
 }
 
 
-func GfxMsg(m string) {
+func GfxMsgExplicit(m MsgContainer) {
 	MsgQueue = append(MsgQueue, m)
+}
+
+
+func GfxMsg(m string) {
+	MsgQueue = append(MsgQueue, MsgContainer{ Str: m, Y: -1 })
 }
 
 
@@ -50,11 +60,33 @@ func gfxStringAt(x, y int, m string) {
 }
 
 
-func gfxStringCenteredAt(y int, m string) {
-	w, _ := termbox.Size()
-	w = (w - len(m)) / 2
+func gfxLineFromString(s string) string {
+	for i := 0; i < len(s); i += 1 {
+		if s[i] == '\n' { return fmt.Sprintf("%v", s[:i]) }
+	}
 
-	gfxStringAt(w, y, m)
+	return s[:]
+}
+
+
+func gfxStringCenteredAt(y int, m string) {
+	width, _ := termbox.Size()
+	off := 0
+
+	for i := 0; i < 2; i += 1 {
+		line := gfxLineFromString(m[off:])
+		w := (width - len(line)) / 2
+
+		// fmt.Println(line)
+
+		y += 1
+		off += len(line) + 1
+
+		gfxStringAt(w, y, line)
+		if off >= len(m) {
+			break
+		}
+	}
 }
 
 
@@ -62,10 +94,17 @@ func gfxShowMsgs() {
 	w, h := termbox.Size()
 	m := MsgQueue[0]
 
-	w = (w - len(m)) / 2
+	w = (w - len(m.Str)) / 2
 	h /= 2
 
-	gfxStringAt(w, h, m)
+	y := h
+
+	if m.Y > -1 {
+		y = m.Y
+	}
+
+	gfxStringCenteredAt(y, m.Str)
+	// gfxStringAt(w, h, m)
 
 	termbox.Flush()
 
