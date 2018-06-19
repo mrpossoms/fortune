@@ -68,6 +68,11 @@ func GameServer(ln net.Listener) {
 				pconn.Lock.Unlock()
 			}
 
+			// if GameWorld.IsGameOver() {
+			// 	fmt.Println("Game over")
+			// 	os.Exit(0)
+			// }
+
 			gameTime += 1
 		}
 	}()
@@ -122,6 +127,7 @@ func GameServer(ln net.Listener) {
 					player.Read(pconn.Dec)
 					players = append(players, player)
 					fmt.Printf("%v (%d) has joined the game\n", players[len(players)-1].Name, players[len(players)-1].ID)
+					fmt.Printf("With color %d\n", players[len(players)-1].Colors.Bg)
 
 					region := GameWorld.Reveal(start.X, start.Y, 3, player.ID)
 

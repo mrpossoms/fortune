@@ -210,7 +210,7 @@ func (w *World) GfxDraw(player *Player) {
 			if plot != nil && plot.Explored & player.ID > 0 {
 				if plot.Unit.Type != unitNone {
 					// Man made
-					player := Players[plot.Unit.OwnerID]
+					player := PlayerFromID(plot.Unit.OwnerID)
 					bg = player.Colors.Bg
 					fg = player.Colors.Fg | plot.Unit.Attr
 					symbol = plot.Unit.Symbol
@@ -254,7 +254,6 @@ func (w *World) GfxDraw(player *Player) {
 			}
 
 			termbox.SetCell(x + thw - hw, y, symbol, fg, bg)
-			termbox.SetOutputMode(termbox.Output256)
 		}
 	}
 

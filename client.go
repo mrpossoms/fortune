@@ -55,9 +55,31 @@ func GameClient() {
 				GfxDrawBegin()
 				player.Name = GfxPrompt("Type your name")
 
+				colorOptions := []string{ "red", "blue", "black", "magenta", "cyan" }
+				colors := []PlayerColors{
+					PlayerColors{ termbox.ColorRed, termbox.ColorWhite },
+					PlayerColors{ termbox.ColorBlue, termbox.ColorWhite },
+					PlayerColors{ termbox.ColorBlack, termbox.ColorWhite },
+					PlayerColors{ termbox.ColorMagenta, termbox.ColorWhite },
+					PlayerColors{ termbox.ColorCyan, termbox.ColorWhite },
+				}
+
+				waiting := true
+
+				GfxMenu("Choose your color", colorOptions, func(selected int) {
+					waiting = false
+					player.Colors = colors[selected]
+				})
+
+				GfxDrawBegin()
+				for ; waiting ; {
+					GfxDrawFinish(true)
+				}
+
 				msg.Write(enc)
 				player.Write(enc)
 				joinSem.Release(1)
+
 				break
 			case PayTypInfo:
 				info := GameInfo{}
@@ -91,6 +113,7 @@ func GameClient() {
 					}
 
 					if p.ID == localPlayer.ID {
+						localPlayer.Colors = p.Colors
 						localPlayer.Wealth = p.Wealth
 						localPlayer.Income = p.Income
 						localPlayer.Score = p.Score
@@ -163,12 +186,6 @@ func GameClient() {
 		switch evt.Ch {
 		case rune('q'):
 			running = false
-			break
-		case rune('m'):
-			opts := []string{ "cheese dog", "mcdawg" }
-			GfxMenu("What u b?", opts, func(selection int) {
-				GfxMsg(fmt.Sprintf("ur a got dang %s", opts[selection]))
-			})
 			break
 		case rune('b'):
 			selectedPlot.BuildMenu(&GameWorld, player.ID, func(selection int) {
