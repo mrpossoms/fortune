@@ -129,10 +129,11 @@ func GameServer(ln net.Listener) {
 					fmt.Printf("%v (%d) has joined the game\n", players[len(players)-1].Name, players[len(players)-1].ID)
 					fmt.Printf("With color %d\n", players[len(players)-1].Colors.Bg)
 
-					region := GameWorld.Reveal(start.X, start.Y, 3, player.ID)
+					villageUi := UnitIndex("village")
+					region := GameWorld.Reveal(start.X, start.Y, Units[villageUi].Sight, player.ID)
 
 					// Spawn their village
-					start.SpawnUnit(UnitIndex("village"), &player)
+					start.SpawnUnit(villageUi, &player)
 					// Msg{ Type: PayTypPlot, Count: 1 }.Write(pconn.Enc)
 					// start.Write(pconn.Enc)
 
@@ -168,12 +169,8 @@ func GameServer(ln net.Listener) {
 						unit := Units[updatedPlot.Unit.Type]
 						cost := unit.Resources.Cost
 						if GameWorld.Plots[x][y].SpendResources(&GameWorld, cost, player.ID) {
-							if updatedPlot.Unit.Type == UnitIndex("canal") {
-								updatedPlot.Elevation = PlotTypes[IdxSea] - 0.1
-							} else {
-								GameWorld.Plots[x][y].SpawnUnit(unit.Type, &player)
-								_ = GameWorld.Reveal(x, y, 2, player.ID)
-							}
+							GameWorld.Plots[x][y].SpawnUnit(unit.Type, &player)
+							_ = GameWorld.Reveal(x, y, unit.Sight, player.ID)
 						} else {
 							Msg{ Type: PayTypText, Count: 1 }.Write(pconn.Enc)
 							TextPayload{ Msg: fmt.Sprintf("Not enough resources to build a %s", unit.Name) }.Write(pconn.Enc)

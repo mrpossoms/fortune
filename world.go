@@ -94,6 +94,30 @@ func (p *Plot) Neighbors(world *World) []*Plot {
 }
 
 
+func (p *Plot) IsBorderBoundry(w *World) (playerId int64, present int) {
+	playerId = p.OwnerID
+
+	if playerId == 0 { return 0, 0 }
+
+	neighbors := p.Neighbors(w)
+	borderCount := 0
+
+	for ni := 0; ni < len(neighbors); ni += 1 {
+		if neighbors[ni].OwnerID == playerId {
+			borderCount += 1
+		}
+	}
+
+	if borderCount < 8 {
+		present = 1
+	} else {
+		present = 0
+	}
+
+	return
+}
+
+
 func (p *Plot) HasNeighbor(world *World, neighbors []*Plot, unitType int, owner int64) bool {
 	for ni := 0; ni < len(neighbors); ni += 1 {
 		neighbor := neighbors[ni]
@@ -171,9 +195,16 @@ func (p *Plot) PossibleBuilds(world *World, owner int64) []int {
 
 func (p *Plot) Description(descType int) string {
 	desc := fmt.Sprintf("%v x%0.2f (%d,%d)", p.TerrainName(), p.Productivity, p.X, p.Y)
+	landDesc := " in "
+	if p.OwnerID > 0 {
+		landDesc += PlayerFromID(p.OwnerID).Name + "'s "
+	} else {
+		landDesc += " the "
+	}
+	landDesc += desc
 
 	if p.Unit.Type != UnitIndex("vacant") {
-		return p.Unit.Description(descType) + " in the " + desc
+		return p.Unit.Description(descType) + " in the " + landDesc
 	}
 
 	return desc
@@ -187,6 +218,10 @@ func (p *Plot) SpawnUnit(unitType int, owner *Player) (*PlotUnit, string) {
 	p.Unit = Units[unitType]
 	p.Unit.OwnerID = owner.ID
 	msg := fmt.Sprintf("(%d,%d) %v spawned for %v", p.X, p.Y, p.Unit.Name, owner.Name)
+
+	if p.Unit.Type == UnitIndex("canal") {
+		p.Elevation = PlotTypes[IdxSea] 
+	}
 
 	fmt.Println(msg)
 

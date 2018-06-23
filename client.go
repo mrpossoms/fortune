@@ -40,7 +40,8 @@ func GameClient() {
 			// TODO: figue out why this is getting out of sync and
 			// not reading headers when building near a tick
 			if err:= msg.Read(dec); err != nil {
-				panic(err)
+				//panic(err)
+				continue
 			}
 
 			switch (msg.Type) {
@@ -145,13 +146,14 @@ func GameClient() {
 
 	joinSem.Acquire(ctx, 1)
 	running := true
+	showBorders := false
 
 	GfxInit()
 
 	for running {
 		GfxDrawBegin()
 
-		GameWorld.GfxDraw(player)
+		GameWorld.GfxDraw(player, showBorders)
 
 		evt := GfxDrawFinish(true)
 
@@ -178,6 +180,7 @@ func GameClient() {
 			}
 
 			GfxMsgExplicit(MsgContainer { Str: score_board, Y: h / 2 })
+			break
 		}
 
 		x, y := player.Cursor.X, player.Cursor.Y
@@ -195,6 +198,10 @@ func GameClient() {
 				Msg { Type: PayTypPlot, Count: 1 }.Write(enc)
 				updatedPlot.Write(enc)
 			})
+			break
+		case rune('s'):
+			showBorders = !showBorders
+			break
 		}
 
 		{

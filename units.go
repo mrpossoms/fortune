@@ -23,6 +23,7 @@ type PlotUnit struct {
 	Type int
 	Resources ResourcesProps
 	OwnerID int64
+	Sight int
 	Name string
 }
 type PlotTile struct { Icon }
@@ -41,18 +42,18 @@ type PlotTile struct { Icon }
 // )
 
 var Units = []PlotUnit{
-	PlotUnit{Icon{rune(' '), 0}, 0, ResourcesProps{Current:0, Rate:0}, 0, "vacant"},
-	PlotUnit{Icon{rune('≈'), 0}, 0, ResourcesProps{Current:0, Rate:2, Cost:30}, 0, "farm"},
-	PlotUnit{Icon{rune('M'), 0}, 0, ResourcesProps{Current:0, Rate:3, Cost:400}, 0, "mine"},
-	PlotUnit{Icon{rune('^'), termbox.AttrUnderline}, 0, ResourcesProps{Current:0, Rate:1}, 0, "forest"},
-	PlotUnit{Icon{rune('Ü'), 0}, 0, ResourcesProps{Current:0, Rate:10, Cost: 3000}, 0, "city"},
-	PlotUnit{Icon{rune('∆'), termbox.AttrUnderline}, 0, ResourcesProps{Current:0, Rate:1, Cost: 300}, 0, "village"},
-	PlotUnit{Icon{rune('*'), 0}, 0, ResourcesProps{Current:0, Rate:-1}, 0, "explorers"},
-	PlotUnit{Icon{rune('*'), 0}, 0, ResourcesProps{Current:0, Rate:0}, 0, "travelers"},
-	PlotUnit{Icon{rune('*'), termbox.AttrBold}, 0, ResourcesProps{Current:0, Rate:5}, 0, "merchants"},
-	PlotUnit{Icon{rune('*'), termbox.AttrBold}, 0, ResourcesProps{Current:0, Rate:-5}, 0, "army"},
-	PlotUnit{Icon{rune('+'), termbox.AttrBold}, 0, ResourcesProps{Current:0, Rate:0, Cost: 10}, 0, "road"},
-	PlotUnit{Icon{rune(' '), termbox.AttrBold}, 0, ResourcesProps{Current:0, Rate:0, Cost: 10}, 0, "canal"},
+	PlotUnit{Icon{rune(' '), 0}, 0, ResourcesProps{Current:0, Rate:0}, 0, 0, "vacant"},
+	PlotUnit{Icon{rune('≈'), 0}, 0, ResourcesProps{Current:0, Rate:2, Cost:30}, 0, 3, "farm"},
+	PlotUnit{Icon{rune('M'), 0}, 0, ResourcesProps{Current:0, Rate:3, Cost:400}, 0, 3, "mine"},
+	PlotUnit{Icon{rune('^'), termbox.AttrUnderline}, 0, ResourcesProps{Current:0, Rate:1}, 0, 0, "forest"},
+	PlotUnit{Icon{rune('Ü'), 0}, 0, ResourcesProps{Current:0, Rate:10, Cost: 3000}, 0, 7, "city"},
+	PlotUnit{Icon{rune('∆'), termbox.AttrUnderline}, 0, ResourcesProps{Current:0, Rate:1, Cost: 300}, 0, 5, "village"},
+	PlotUnit{Icon{rune('*'), 0}, 0, ResourcesProps{Current:0, Rate:-1}, 0, 3, "explorers"},
+	PlotUnit{Icon{rune('*'), 0}, 0, ResourcesProps{Current:0, Rate:0}, 0, 3, "travelers"},
+	PlotUnit{Icon{rune('*'), termbox.AttrBold}, 0, ResourcesProps{Current:0, Rate:5}, 0, 2, "merchants"},
+	PlotUnit{Icon{rune('*'), termbox.AttrBold}, 0, ResourcesProps{Current:0, Rate:-5}, 0, 3, "army"},
+	PlotUnit{Icon{rune('+'), termbox.AttrBold}, 0, ResourcesProps{Current:0, Rate:0, Cost: 10}, 0, 2, "road"},
+	PlotUnit{Icon{rune('~'), termbox.AttrBold}, 0, ResourcesProps{Current:0, Rate:0, Cost: 10}, 0, 2, "canal"},
 }
 
 

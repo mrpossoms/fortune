@@ -188,7 +188,7 @@ func GfxMenu(title string, options []string, on_selection func(int)) {
 }
 
 
-func (w *World) GfxDraw(player *Player) {
+func (w *World) GfxDraw(player *Player, showBorders bool) {
 	unitNone := UnitIndex("vacant")
 	tw, _ := termbox.Size()
 	thw := tw >> 1
@@ -245,6 +245,11 @@ func (w *World) GfxDraw(player *Player) {
 					}
 				}
 
+				if showBorders {
+					if playerId, present := plot.IsBorderBoundry(w); present > 0 {
+						bg = PlayerFromID(playerId).Colors.Bg
+					}
+				}
 			}
 
 			if _x == player.Cursor.X && _y == player.Cursor.Y {
