@@ -157,12 +157,13 @@ func (p *Plot) PossibleBuilds(world *World, owner int64) []int {
 	nextToCity := p.HasNeighbor(world, neighbors, unitCity, owner)
 	nextToFarm := p.HasNeighbor(world, neighbors, unitFarm, owner)
 	nextToRoad := p.HasNeighbor(world, neighbors, unitRoad, owner)
+	nextToBridge := p.HasNeighbor(world, neighbors, unitBridge, owner)
 
 	nextToWater := p.HasNeighboringPlotType(world, neighbors, IdxSea)
 
 	buildables := make([]int, 0, 10)
 
-	nextToCivilization := nextToRoad || nextToCity || nextToVillage || nextToFarm
+	nextToCivilization := nextToBridge || nextToRoad || nextToCity || nextToVillage || nextToFarm
 
 	// TODO: figure out why this causes problems on the
 	// client, but not the server
@@ -367,7 +368,14 @@ func (w *World) ChangedPlots(plots []*Plot, tick int, playerMsk int64) []*Plot {
 
 
 func (w *World) TotalCaptureSpace() (captureable int) {
-	captureable = w.Width * w.Height
+	captureable = 0
+	for x := 0; x < w.Width; x += 1 {
+		for y := 0; y < w.Height; y += 1 {
+			if w.Plots[x][y].Elevation > PlotSea {
+				captureable += 1
+			}
+		}
+	}
 
 	return
 }
@@ -378,7 +386,7 @@ func (w *World) IsGameOver() bool {
 		for y := 0; y < w.Height; y += 1 {
 			plot := &w.Plots[x][y]
 
-			if plot.OwnerID == 0 {
+			if plot.Elevation > PlotSea && plot.OwnerID == 0 {
 				return false
 			}
 		}
@@ -440,7 +448,7 @@ func (w *World) Reveal(x, y, r int, playerId int64) Region {
 			dist := dx * dx + dy * dy
 			if dist <= (r * r) {
 				plot := &w.Plots[i][j]
-				if plot.OwnerID == 0 {
+				if plot.OwnerID == 0 && plot.Elevation > PlotSea {
 					plot.OwnerID = playerId
 				}
 

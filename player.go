@@ -50,6 +50,7 @@ func PlayerIndex(id int64) int {
 	return i
 }
 
+
 func (p *Player) MoveCursor(dx, dy int) {
 	last_dist_x := abs(p.Cursor.X - p.Cam.X)
 	last_dist_y := abs(p.Cursor.Y - p.Cam.Y)

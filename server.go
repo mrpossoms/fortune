@@ -9,6 +9,15 @@ import (
 	"encoding/gob"
 )
 
+func leader(players []Player) (l *Player) {
+	for pi := 0; pi < len(players); pi += 1 {
+		if l == nil || players[pi].Score > l.Score {
+			l = &players[pi]
+		}
+	}
+
+	return
+}
 
 func GameServer(ln net.Listener) {
 	var playerPool [64]Player
@@ -70,10 +79,17 @@ func GameServer(ln net.Listener) {
 				pconn.Lock.Unlock()
 			}
 
-			// if GameWorld.IsGameOver() {
-			// 	fmt.Println("Game over")
-			// 	os.Exit(0)
-			// }
+			if GameWorld.IsGameOver() {
+				winner := leader(players)
+				for conni := 0; conni < len(players); conni += 1 {
+					pconn := PlayerConns[conni]
+					Msg{ Type: PayTypText, Count: 1 }.Write(pconn.Enc)
+					TextPayload{ Msg: fmt.Sprintf("Game over, %s wins", winner.Name) }.Write(pconn.Enc)
+				}
+
+				fmt.Println("Game over")
+				os.Exit(0)
+			}
 
 			gameTime += 1
 		}
