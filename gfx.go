@@ -73,7 +73,7 @@ func gfxStringCenteredAt(y int, m string) {
 	width, _ := termbox.Size()
 	off := 0
 
-	for i := 0; i < 2; i += 1 {
+	for i := 0; true; i += 1 {
 		line := gfxLineFromString(m[off:])
 		w := (width - len(line)) / 2
 

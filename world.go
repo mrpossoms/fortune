@@ -148,6 +148,7 @@ func (p *Plot) PossibleBuilds(world *World, owner int64) []int {
 	unitVillage := UnitIndex("village")
 	unitFarm := UnitIndex("farm")
 	unitRoad := UnitIndex("road")
+	unitBridge := UnitIndex("bridge")
 	unitMine := UnitIndex("mine")
 	unitCanal := UnitIndex("canal")
 
@@ -182,7 +183,11 @@ func (p *Plot) PossibleBuilds(world *World, owner int64) []int {
 	}
 
 	if nextToCivilization {
-		buildables = append(buildables, unitRoad)
+		if p.TerrainIndex() == IdxSea {
+			buildables = append(buildables, unitBridge)
+		} else {
+			buildables = append(buildables, unitRoad)
+		}
 
 		if p.TerrainIndex() == TerrainIndexForElevation(PlotMountain) {
 			buildables = append(buildables, unitMine)
@@ -204,7 +209,7 @@ func (p *Plot) Description(descType int) string {
 	landDesc += desc
 
 	if p.Unit.Type != UnitIndex("vacant") {
-		return p.Unit.Description(descType) + " in the " + landDesc
+		return p.Unit.Description(descType) + landDesc
 	}
 
 	return desc
@@ -361,12 +366,19 @@ func (w *World) ChangedPlots(plots []*Plot, tick int, playerMsk int64) []*Plot {
 }
 
 
+func (w *World) TotalCaptureSpace() (captureable int) {
+	captureable = w.Width * w.Height
+
+	return
+}
+
+
 func (w *World) IsGameOver() bool {
 	for x := 0; x < w.Width; x += 1 {
 		for y := 0; y < w.Height; y += 1 {
 			plot := &w.Plots[x][y]
 
-			if plot.Elevation >= PlotSea && plot.OwnerID == 0 {
+			if plot.OwnerID == 0 {
 				return false
 			}
 		}

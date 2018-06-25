@@ -52,14 +52,16 @@ func GameServer(ln net.Listener) {
 				pconn.Lock.Lock()
 				Msg{ Type: PayTypPlot, Count: int32(len(changed)) }.Write(pconn.Enc)
 
-				for conni := 0; conni < len(changed); conni += 1 {
-					changed[conni].Write(pconn.Enc)
+				for plotIdx := 0; plotIdx < len(changed); plotIdx += 1 {
+					changed[plotIdx].Write(pconn.Enc)
 				}
 
 				// send all player scores to each player
+				//fmt.Printf("To: %d %v\n", pconn.ID, PlayerFromID(pconn.ID).Name)
 				Msg{ Type: PayTypPlayer, Count: int32(len(players)) }.Write(pconn.Enc)
 				for pi := 0; pi < len(players); pi += 1 {
-					player := &players[conni]
+					player := &players[pi]
+					//fmt.Printf("\t%d %v\n", player.ID, player.Name)
 					player.Wealth, player.Income = GameWorld.PlayerResources(player.ID)
 					player.Score = int32(GameWorld.PlayerScore(player.ID))
 					player.Write(pconn.Enc)
@@ -101,7 +103,7 @@ func GameServer(ln net.Listener) {
 
 			// Send game info to player
 			Msg{ Type: PayTypInfo, Count:1 }.Write(pconn.Enc)
-			GameInfo{ GameWorld.Width, GameWorld.Height }.Write(pconn.Enc)
+			GameInfo{ GameWorld.Width, GameWorld.Height, GameWorld.TotalCaptureSpace() }.Write(pconn.Enc)
 
 			// Find a place for them to start
 			start := GameWorld.FindLivablePlot()

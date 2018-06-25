@@ -9,7 +9,7 @@ import (
 	"context"
 	"fmt"
 	"encoding/gob"
-	// "time"
+	"time"
 )
 
 
@@ -23,11 +23,14 @@ func GameClient() {
 	joinSem := semaphore.NewWeighted(2)
 	var player *Player;
 	gotMap := false
+	connectionLost := false
+	var gameInfo GameInfo
 	conn, err := net.Dial("tcp", os.Args[1] + ":31337")
 	if err != nil {
 		// handle error
 		panic(err)
 	}
+
 
 	enc := gob.NewEncoder(conn)
 	dec := gob.NewDecoder(conn)
@@ -37,11 +40,21 @@ func GameClient() {
 	go func(){
 		msg := Msg{}
 		for {
+			conn.SetDeadline(time.Now().Add(time.Second * 5))
+
 			// TODO: figue out why this is getting out of sync and
 			// not reading headers when building near a tick
 			if err:= msg.Read(dec); err != nil {
-				//panic(err)
-				continue
+				termbox.Interrupt()
+				if err.Error() == "EOF" {
+					GfxMsg("Connection closed by server")
+				} else {
+					GfxMsg(err.Error())
+				}
+				connectionLost = true
+				//panic(err
+				//continue
+				break
 			}
 
 			switch (msg.Type) {
@@ -83,11 +96,9 @@ func GameClient() {
 
 				break
 			case PayTypInfo:
-				info := GameInfo{}
-				info.Read(dec)
-				GameWorld.Width = info.Width
-				GameWorld.Height = info.Height
-				fmt.Printf("got info %dx%d\n", info.Width, info.Height)
+				gameInfo.Read(dec)
+				GameWorld.Width = gameInfo.Width
+				GameWorld.Height = gameInfo.Height
 				break
 			case PayTypPlot:
 				for i := 0; i < int(msg.Count); i += 1 {
@@ -113,13 +124,15 @@ func GameClient() {
 						GfxMsg(fmt.Sprintf("%v joined the game", p.Name))
 					}
 
-					if p.ID == localPlayer.ID {
+					if player == localPlayer {
 						localPlayer.Colors = p.Colors
 						localPlayer.Wealth = p.Wealth
 						localPlayer.Income = p.Income
 						localPlayer.Score = p.Score
 					} else {
-						*PlayerFromID(p.ID) = p
+						*localPlayer = p
+						Players[PlayerIndex(p.ID)] = p
+						//GfxMsg(fmt.Sprintf("%v %d", localPlayer.Name, localPlayer.ID))
 					}
 
 
@@ -155,6 +168,10 @@ func GameClient() {
 
 		GameWorld.GfxDraw(player, showBorders)
 
+		if connectionLost {
+			running = false
+		}
+
 		evt := GfxDrawFinish(true)
 
 		switch evt.Key {
@@ -172,12 +189,15 @@ func GameClient() {
 			break
 		case termbox.KeyTab:
 			_, h := termbox.Size()
-			score_board := ""
+			score_board := "-- Score Board --\n"
+			captured := int32(0)
 			for i := 0; i < len(Players); i += 1 {
 				if Players[i].ID > 0 {
 					score_board += fmt.Sprintf("%v - score %d\n", Players[i].Name, Players[i].Score)
+					captured += Players[i].Score
 				}
 			}
+			score_board += fmt.Sprintf("-- %d/%d land captured --\n", captured, gameInfo.CaptureSpace)
 
 			GfxMsgExplicit(MsgContainer { Str: score_board, Y: h / 2 })
 			break
@@ -202,11 +222,6 @@ func GameClient() {
 		case rune('s'):
 			showBorders = !showBorders
 			break
-		}
-
-		{
-			// x, y := player.Cursor.X, player.Cursor.Y
-			// GameWorld.Plots[x][y].Explored = 1
 		}
 	}
 }

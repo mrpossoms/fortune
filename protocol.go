@@ -41,6 +41,7 @@ type TextPayload struct {
 
 type GameInfo struct {
 	Width, Height int
+	CaptureSpace int
 }
 
 

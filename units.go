@@ -53,6 +53,7 @@ var Units = []PlotUnit{
 	PlotUnit{Icon{rune('*'), termbox.AttrBold}, 0, ResourcesProps{Current:0, Rate:5}, 0, 2, "merchants"},
 	PlotUnit{Icon{rune('*'), termbox.AttrBold}, 0, ResourcesProps{Current:0, Rate:-5}, 0, 3, "army"},
 	PlotUnit{Icon{rune('+'), termbox.AttrBold}, 0, ResourcesProps{Current:0, Rate:0, Cost: 10}, 0, 2, "road"},
+	PlotUnit{Icon{rune('+'), termbox.AttrBold}, 0, ResourcesProps{Current:0, Rate:0, Cost: 20}, 0, 3, "bridge"},
 	PlotUnit{Icon{rune('~'), termbox.AttrBold}, 0, ResourcesProps{Current:0, Rate:0, Cost: 10}, 0, 2, "canal"},
 }
 
