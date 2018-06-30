@@ -40,7 +40,7 @@ func GameClient() {
 	go func(){
 		msg := Msg{}
 		for {
-			conn.SetDeadline(time.Now().Add(time.Second * 5))
+			conn.SetDeadline(time.Now().Add(time.Second * 10))
 
 			// TODO: figue out why this is getting out of sync and
 			// not reading headers when building near a tick
